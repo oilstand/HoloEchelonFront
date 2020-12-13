@@ -1,0 +1,19 @@
+{
+  "name": "akukin_building",
+  "scripts": {
+    "dev": "nuxt --port 3333",
+    "analyze": "nuxt build --analyze",
+    "build": "nuxt build",
+    "start": "nuxt start",
+    "generate": "nuxt generate"
+  },
+  "dependencies": {
+    "@nuxtjs/axios": "^5.12.2",
+    "@nuxtjs/pwa": "^3.2.2",
+    "nuxt": "^2.14.7"
+  },
+  "devDependencies": {
+    "@nuxt/types": "^2.14.7",
+    "@nuxt/typescript-build": "^2.0.3"
+  }
+}
