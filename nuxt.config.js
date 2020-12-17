@@ -11,12 +11,12 @@ export default {
   ** Headers of the page
   */
   head: {
-    titleTemplate: '%s | title',
-    title: 'title',
     htmlAttrs: {
       lang: 'ja',
       prefix: 'og: http://ogp.me/ns#'
     },
+    titleTemplate: '%s | HoloEchelon',
+    title: 'title',
     meta: [
       { charset: 'utf-8' },
       { 'http-equiv': 'content-language', content:'ja' },
