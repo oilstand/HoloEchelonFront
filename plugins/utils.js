@@ -8,7 +8,136 @@ const formatDate = (date, format) => {
     format = format.replace(/SSS/g, ('00' + date.getMilliseconds()).slice(-3));
     return format;
 }
+const getStartEndTime = (video) => {
 
+    switch(video.liveBroadcastContent) {
+        case 'suspended':
+        case 'upcoming':
+            if(video.scheduledStartTime) {
+                let endD = new Date(video.scheduledStartTime);
+                endD.setHours(endD.getHours() + 2);
+                return [new Date(video.scheduledStartTime), endD]
+            }
+        case 'live':
+            if(video.actualStartTime) {
+                let startD = new Date(video.actualStartTime);
+                let now = new Date();
+                let diff = now.getTime() - startD.getTime();
+                if(diff < 2 * 60 * 60 * 1000) {
+                    let endD = new Date(startD.getTime());
+                    endD.setHours(endD.getHours() + 2);
+                    diff = endD.getTime() - now.getTime();
+                    if(diff < 0.5 * 60 * 60 * 1000) {
+                        now.setMinutes(now.getMinutes() + 30);
+                        endD = now;
+                    }
+                    return [startD, endD];
+                } else {
+                    now.setMinutes(now.getMinutes() + 30);
+                    return [startD, now];
+                }
+            }
+        default:
+            if(video.actualStartTime && video.actualEndTime) {
+                return [new Date(video.actualStartTime), new Date(video.actualEndTime)]
+            }
+            break;
+    }
+}
+
+/*const initializeVideos = (srcVideos, colorIdx) => {
+
+    let videos = [];
+    if( srcVideos ) {
+        let idx = 0;
+        for(let video of srcVideos) {
+            video.idx = idx;idx++;
+            let [date1, date2] = getStartEndTime(video);
+            video.startTime = date1.getTime();
+            video.endTime = date2.getTime();
+            let date1_border = new Date(date1.getTime());
+            let date2_border = new Date(date2.getTime());
+            date1_border.setHours(date1_border.getHours() - 12);
+            date2_border.setHours(date2_border.getHours() + 12);
+            let nglist = [];
+
+            for(let i = 0; i < videos.length ; i++) {
+                let [start, end] = getStartEndTime(videos[i]);
+
+                if(date1_border < start && start <= date1 && date1 < end) {
+                    nglist.push(videos[i].topIndex);
+                } else if(date2_border > end && start <= date2 && date2 < end) {
+                    nglist.push(videos[i].topIndex);
+                } else if(start >= date1 && date2 >= end) {
+                    nglist.push(videos[i].topIndex);
+                }
+            }
+            video.topIndex = 0;
+            while(nglist.indexOf(video.topIndex) !== -1) {
+                video.topIndex++;
+            }
+            video.topOffset = video.topIndex * 54;
+            if(video.liveBroadcastContent !== 'live') {
+                video.topOffset++;
+            }
+
+            for(let ccmap of colorIdx) {
+                if(video.channelId === ccmap.id) {
+                    video.color = ccmap.color;
+                    break;
+                }
+            }
+
+            videos.push(video);
+        }
+    }
+    return videos;
+}*/
+const initializeVideos = (srcVideos, colorIdx) => {
+
+    if( srcVideos ) {
+        let idx = 0;
+        for(const [index, video] of srcVideos.entries()) {
+            video.idx = idx;idx++;
+            let [date1, date2] = getStartEndTime(video);
+            video.startTime = date1.getTime();
+            video.endTime = date2.getTime();
+            let date1_border = new Date(date1.getTime());
+            let date2_border = new Date(date2.getTime());
+            date1_border.setHours(date1_border.getHours() - 12);
+            date2_border.setHours(date2_border.getHours() + 12);
+            let nglist = [];
+
+            for(let i = 0; i < index ; i++) {
+                let [start, end] = getStartEndTime(srcVideos[i]);
+
+                if(date1_border < start && start <= date1 && date1 < end) {
+                    nglist.push(srcVideos[i].topIndex);
+                } else if(date2_border > end && start <= date2 && date2 < end) {
+                    nglist.push(srcVideos[i].topIndex);
+                } else if(start >= date1 && date2 >= end) {
+                    nglist.push(srcVideos[i].topIndex);
+                }
+            }
+            video.topIndex = 0;
+            while(nglist.indexOf(video.topIndex) !== -1) {
+                video.topIndex++;
+            }
+            video.topOffset = video.topIndex * 54;
+            if(video.liveBroadcastContent !== 'live') {
+                video.topOffset++;
+            }
+
+            for(let ccmap of colorIdx) {
+                if(video.channelId === ccmap.id) {
+                    video.color = ccmap.color;
+                    break;
+                }
+            }
+        }
+    }
+    return srcVideos;
+}
 /*const genElement = ( tag, classList = [], attr = {}, property = {} ) => {
     let elm = document.createElement( tag );
     for(let clsName of classList ){
@@ -76,6 +205,8 @@ export default function ({ $axios }, inject) {
   const api = new API($axios);
   inject('api', api);
   inject('formatDate', formatDate);
+  inject('initializeVideos', initializeVideos);
+//  inject('initializeVideos2', initializeVideos2);
 
 /*
   inject('formatDate', formatDate);

@@ -22,15 +22,20 @@
         <div class="side-control-area" style="right:0;background-image: linear-gradient(90deg, transparent 0%, #333 100%);" v-on:click="expandFuture">→</div>
         <TimelineVideoInfo
             v-if="focusVideo"
-            v-on:close="focusVideo = null"
+            v-on:close="focusVideo = null;expandInfomation = 0;"
+            v-on:wheel="handleOnWheelInfomation"
+            v-on:wipe="handleWipeAdd"
             :data="focusVideo"
-            :style="`height:calc(50%)`"
+            :style="`height:calc(35% + ${expandInfomation}px)`"
             class="video-infomation" />
-        <table v-if="false">
-            <tbody>
-                <tr v-for="video in videos" :key="video.id"><td><img :src="video.thumbnails.medium.url"></td><td>{{video.title}}</td><td>{{video.id}}</td><td>{{video.publishedAt}}</td><td></td></tr>
-            </tbody>
-        </table>
+
+        <YouTubeWipeWindow
+            v-for="(wipe, index) in wipes"
+            v-on:close="handleWipeClose"
+            :key="`w_${wipe}`"
+            :wipe="wipe"
+            class="wipe-window"
+            :style="`top:${150 * index + 20}px;`" />
     </div>
 </template>
 <style>
@@ -42,12 +47,15 @@
     opacity:.2;
 }
 .video-infomation {
+    transition: height .2s;
     position:absolute;
     left:0;
     bottom:0;
     width:100%;
     height:50%;
-    background-color:rgba(0,0,0,.3);
+    max-height:100%;
+    color:white;
+    background-color:rgba(0,0,0,.7);
 }
 .timeline_wrapper {
     position:relative;
@@ -60,6 +68,12 @@
     overflow:hidden;
     height:100%;
 }
+.wipe-window {
+    position:absolute;
+    width:200px;
+    height:calc(200px * 36 / 64);
+    right:50px;
+}
 </style>
 <script>
 import axios from 'axios'
@@ -67,115 +81,51 @@ import Bar from '~/components/TimelineBar.vue'
 import Label from '~/components/TimelineLabel.vue'
 import TimelineCursor from '~/components/TimelineCursor.vue'
 import TimelineVideoInfo from '~/components/TimelineVideoInfo.vue'
+import YouTubeIFrame from '~/components/YouTubeIFrame.vue'
+import interact from 'interactjs'
+import YouTubeWipeWindow from '~/components/YouTubeWipeWindow.vue'
 
 export default {
     async asyncData({ params, app }) {
 
-        let res = await app.$api.request("newVideos/0")
-            .then(res => {
-                return res.data;
-            })
+        let until = new Date();
+        until.setDate(until.getDate() + 1);
+        let timezoneOffset = until.getTimezoneOffset();
+        let jstOffset = 540 - timezoneOffset;
+        until.setMinutes(until.getMinutes() + jstOffset);
+
+        let since = new Date(until.getTime());
+        since.setDate(since.getDate() - 3);
+        let loadRange = {
+            since: app.$formatDate(since, 'yyyy-MM-dd 23:59:59+09:00'),
+            until: app.$formatDate(until, 'yyyy-MM-dd 23:59:59+09:00')
+        };
+
+        let res = await app.$api.request("videos?date="+app.$formatDate(until, 'yyyy-MM-dd')+"&range=3")
+            .then(res => { return res.data; })
             .catch((e) => {
-                console.log("catch request error");
-                console.log(e);
+                console.log("catch request error", e);
                 return false;
             });
 
         let channelRes = await app.$api.request("channelList")
-            .then(res => {
-                return res.data;
-            })
+            .then(res => { return res.data; })
             .catch(e=>{
-                console.log("catch request error");
-                console.log(e);
+                console.log("catch request error", e);
                 return false;
             });
 
         let colorIdx = [];
         for(let channel of channelRes.data) {
-            colorIdx[channel.id] = channel.color;
-        }
-        console.log(colorIdx);
-
-        function getStartEndTime(video) {
-
-            switch(video.liveBroadcastContent) {
-                case 'suspended':
-                case 'upcoming':
-                    if(video.scheduledStartTime) {
-                        let endD = new Date(video.scheduledStartTime);
-                        endD.setHours(endD.getHours() + 2);
-                        return [new Date(video.scheduledStartTime), endD]
-                    }
-                case 'live':
-                    if(video.actualStartTime) {
-                        let startD = new Date(video.actualStartTime);
-                        let now = new Date();
-                        let diff = now.getTime() - startD.getTime();
-                        if(diff < 2 * 60 * 60 * 1000) {
-                            let endD = new Date(startD.getTime());
-                            endD.setHours(endD.getHours() + 2);
-                            diff = endD.getTime() - now.getTime();
-                            if(diff < 0.5 * 60 * 60 * 1000) {
-                                now.setMinutes(now.getMinutes() + 30);
-                                endD = now;
-                            }
-                            return [startD, endD];
-                        } else {
-                            now.setMinutes(now.getMinutes() + 30);
-                            return [startD, now];
-                        }
-                    }
-                default:
-                    if(video.actualStartTime && video.actualEndTime) {
-                        return [new Date(video.actualStartTime), new Date(video.actualEndTime)]
-                    }
-                    break;
-            }
+            colorIdx.push({id: channel.id, color: channel.color});
         }
 
         let videos = [];
         if(res && res.data ) {
-            res.data.reverse();
-            let idx = 0;
-            for(let video of res.data) {
-                video.idx = idx;idx++;
-                let [date1, date2] = getStartEndTime(video);
-                video.startTime = date1.getTime();
-                video.endTime = date2.getTime();
-                let date1_border = new Date(date1.getTime());
-                let date2_border = new Date(date2.getTime());
-                date1_border.setHours(date1_border.getHours() - 12);
-                date2_border.setHours(date2_border.getHours() + 12);
-                let nglist = [];
-
-                for(let i = 0; i < videos.length ; i++) {
-                    let [start, end] = getStartEndTime(videos[i]);
-
-                    if(date1_border < start && start <= date1 && date1 < end) {
-                        nglist.push(videos[i].topIndex);
-                    } else if(date2_border > end && start <= date2 && date2 < end) {
-                        nglist.push(videos[i].topIndex);
-                    } else if(start >= date1 && date2 >= end) {
-                        nglist.push(videos[i].topIndex);
-                    }
-                }
-                video.topIndex = 0;
-                while(nglist.indexOf(video.topIndex) !== -1) {
-                    video.topIndex++;
-                }
-                video.topOffset = video.topIndex * 54;
-                if(video.liveBroadcastContent !== 'live') {
-                    video.topOffset++;
-                }
-
-                video.color = colorIdx[video.channelId];
-
-                videos.push(video);
-            }
+            videos = app.$initializeVideos(res.data, colorIdx);
         }
 
-        return {videos:videos};
+        return {videos:videos, range:loadRange, colorIdx:colorIdx};
     },
     head() {
         return {
@@ -201,32 +151,119 @@ export default {
             pastOffset: 12,
             futureOffset: 24,
             timelineLength: 1.5,
-            focusVideo: null
+            focusVideo: null,
+            expandInfomation: 0,
+            wipes: []
         }
     },
     methods: {
-        test(e){
-            console.log(e);
+        handleWipeAdd(vId){
+            if(this.wipes.indexOf(vId) == -1) {
+                this.wipes.push(vId);
+            }
+        },
+        handleWipeClose(vId) {
+            let index = this.wipes.indexOf(vId);
+            if(index == 0) {
+                this.wipes.shift();
+            } else if(index == (this.wipes.length - 1)) {
+                this.wipes.pop();
+            } else {
+                this.wipes = this.wipes.filter(id => id != vId)
+            }
         },
         handleOnWheel(e) {
             
             let [tmpelm] = document.getElementsByClassName('timeline');
             let tlWrapper = tmpelm.parentNode;
-            //console.log(tmpelm.parentNode.scrollLeft, this.timelineWidth * this.timelineLength);
 
             if(tlWrapper.scrollLeft == 0
                 && e.deltaY < 0) {
 
                 this.expandPast();
-                //tlWrapper.scrollLeft = this.timelineWidth * 0.5;
+
+                let dateSince = new Date(this.range.since);
+                dateSince.setHours(dateSince.getHours() + 12);
+                let dateTimelineHead = new Date(this.startTimeStr);
+                if(dateTimelineHead < dateSince) {
+                    this.loadPastVideos();
+                }
             } else if(tlWrapper.scrollLeft == this.timelineWidth * (this.timelineLength - 1)
                 && e.deltaY > 0) {
 
                 this.expandFuture();
-            } else {
 
+                let dateUntil = new Date(this.range.until);
+                let dateTimelineTail = new Date(this.endTimeStr);
+                if(dateTimelineTail > dateUntil) {
+                    this.loadFutureVideos();
+                }
             }
+            
             tmpelm.parentNode.scrollLeft += e.deltaY;
+
+        },
+        async requestMoreVideos(targetDate) {
+            return await this.$api.request("videos?date="+this.$formatDate(targetDate, 'yyyy-MM-dd'));
+        },
+        async loadPastVideos() {
+            let dateTimelineHead = new Date(this.startTimeStr);
+            dateTimelineHead.setHours(dateTimelineHead.getHours() - 12);
+
+            let dateNewSince = new Date(dateTimelineHead.getTime());
+            dateNewSince.setDate(dateNewSince.getDate() - 1);
+            this.range.since = this.$formatDate(dateNewSince, 'yyyy-MM-dd 23:59:59+09:00');
+
+            let res = await this.requestMoreVideos(dateTimelineHead)
+                .then(res => { return res.data; })
+                .catch((e) => {
+                    console.log("catch request error", e);
+                    return false;
+                });
+                
+            if(res && res.data ) {
+                this.videos.unshift(...res.data);
+
+                this.$initializeVideos(
+                    this.videos,
+                    this.colorIdx
+                );
+            }
+        },
+        async loadFutureVideos() {
+            let dateTimelineTail = new Date(this.endTimeStr);
+            let dateNewUntil = new Date(dateTimelineTail.getTime());
+
+            dateNewUntil.setDate(dateNewUntil.getDate());
+            this.range.until = this.$formatDate(dateNewUntil, 'yyyy-MM-dd 23:59:59+09:00');
+
+            let res = await this.requestMoreVideos(dateTimelineTail)
+                .then(res => { return res.data; })
+                .catch((e) => {
+                    console.log("catch request error", e);
+                    return false;
+                });
+                
+            if(res && res.data ) {
+                this.videos.push(...res.data);
+
+                this.$initializeVideos(
+                    this.videos,
+                    this.colorIdx
+                );
+            }
+        },
+        handleOnWheelInfomation(e) {
+            let [tmpelm] = document.getElementsByClassName('video-infomation');
+            let infoWrapper = tmpelm.parentNode;
+
+            this.expandInfomation += e.deltaY;
+
+            if(this.expandInfomation < 0) {
+                this.expandInfomation = 0;
+            } else if(this.expandInfomation > infoWrapper.clientHeight * 0.65) {
+                this.expandInfomation = infoWrapper.clientHeight * 0.65;
+            }
         },
         expandPast() {
             this.pastOffset += 12;this.timelineLength += 0.5;
@@ -296,12 +333,60 @@ export default {
         }
     },
     components: {
-        Bar,    Label,  TimelineCursor, TimelineVideoInfo
+        Bar,    Label,  TimelineCursor, TimelineVideoInfo,
+        YouTubeIFrame,  YouTubeWipeWindow
     },
     mounted() {
         let [tmpelm] = document.getElementsByClassName('timeline');
         this.elmTimeline = tmpelm.parentNode;
-        console.log(this.videos);
+
+        // initialize interactjs
+        interact('.wipe-window')
+        .resizable({
+            edges: {
+                top   : false,
+                left  : '.resize-lb',
+                bottom: '.resize-lb',
+                right : false
+            },
+            modifiers: [
+                interact.modifiers.aspectRatio({
+                    ratio: (64/36)
+                })
+            ]
+        })
+        .draggable({
+            listeners: {
+                start (event) {
+                    //@console.log(event.type, event.target);
+                },
+                move: (event) => {
+                    let { x, y } = event.target.dataset;
+
+                    x = parseFloat(x) || 0; x += event.dx - 0;
+                    y = parseFloat(y) || 0; y += event.dy - 0;
+                    Object.assign(event.target.dataset, { x, y })
+
+                    event.target.style.transform =
+                        `translate(${x}px, ${y}px)`
+                },
+            }
+        })
+        .on('resizemove', event => {
+            let { x, y } = event.target.dataset;
+
+            x = parseFloat(x) || 0;// x += event.deltaRect.left;
+            y = parseFloat(y) || 0; y += event.deltaRect.top;
+
+            Object.assign(event.target.style, {
+                width: `calc(${event.rect.width}px)`,
+                height: `calc(${event.rect.height}px)`,
+                transform: `translate3d(${x}px, ${y}px, 0px)`
+            });
+
+            Object.assign(event.target.dataset, { x, y });
+        });
+
     }
 }
 </script>

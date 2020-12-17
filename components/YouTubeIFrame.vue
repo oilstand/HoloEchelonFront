@@ -22,17 +22,27 @@ export default {
                 height: Math.floor(elmParent.clientWidth * 36 / 64), // プレーヤーの高さ
                 events: {
                     onReady: ()=>{
-                        this.ytPlayer.cueVideoById(this.vid);
+                        this.handleOnReady(this.vid);
                     }
                 }
             }
         );
+    },
+    handleOnReady(vid) {
+
+        if(this.mute == 1)this.ytPlayer.mute();
+
+        if(this.autoplay == 1) {
+            this.ytPlayer.loadVideoById(vid);
+        } else {
+            this.ytPlayer.cueVideoById(vid);
+        }
     }
   },
-  props: ['vid'],
+  props: ['vid','autoplay','mute'],
   watch: {
       vid: function(newval, oldval) {
-          this.ytPlayer.cueVideoById(newval);
+          this.handleOnReady(newval);
       }
   },
   computed: {
