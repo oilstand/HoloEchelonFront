@@ -20,7 +20,7 @@
     position:absolute;
     border:solid 1px gray;
     width:100px;
-    height:50px;
+    height:42px;
     cursor: pointer;
 }
 
@@ -31,6 +31,7 @@
     -webkit-line-clamp: 2;
     display: -webkit-box;
     -webkit-box-orient: vertical;
+    line-height:1.4em;
 }
 .channnel-disp {
     width:100%;

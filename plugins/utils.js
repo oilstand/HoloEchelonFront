@@ -123,7 +123,7 @@ const initializeVideos = (srcVideos, colorIdx) => {
             while(nglist.indexOf(video.topIndex) !== -1) {
                 video.topIndex++;
             }
-            video.topOffset = video.topIndex * 54;
+            video.topOffset = video.topIndex * 46;
             if(video.liveBroadcastContent !== 'live') {
                 video.topOffset++;
             }
