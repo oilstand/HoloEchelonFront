@@ -146,7 +146,10 @@ export default {
     },
     head() {
         return {
-            title: 'schedule',
+            htmlAttrs: {
+                lang: 'ja'
+            },
+            title: 'Schedule',
             meta: [
                 { hid: 'description', name: 'description', content: `hololive schedule tool` },
                 { hid: 'keywords', name: 'keywords', content: 'hololive' },

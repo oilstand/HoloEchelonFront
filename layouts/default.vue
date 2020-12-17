@@ -217,10 +217,13 @@ header h1 span {
 
 <script>
 export default {
-/*  head() {
-      return {
-      }
-  },*/
+  head() {
+    return {
+        htmlAttrs: {
+            lang: 'ja'
+        }
+    }
+  },
   data () {
     return {
     }
