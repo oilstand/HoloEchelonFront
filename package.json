@@ -1,5 +1,5 @@
 {
-  "name": "akukin_building",
+  "name": "holoechelon",
   "scripts": {
     "dev": "nuxt --port 3333",
     "analyze": "nuxt build --analyze",
