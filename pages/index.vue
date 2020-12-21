@@ -31,7 +31,8 @@
             v-on:wipe="wipeAdd"
             v-on:play="videoPlay"
             :data="focusVideo"
-            :style="`height:calc(35% + ${expandInfomation}px)`"
+            :channelList="channelList"
+            :style="`height:calc(${videoInfomationOffset}px + ${expandInfomation}px)`"
             class="video-infomation" />
 
         <!-- メインビデオプレイヤー -->
@@ -93,12 +94,11 @@
 </style>
 <script>
 import axios from 'axios'
+import interact from 'interactjs'
 import Bar from '~/components/TimelineBar.vue'
 import Label from '~/components/TimelineLabel.vue'
 import TimelineCursor from '~/components/TimelineCursor.vue'
 import TimelineVideoInfo from '~/components/TimelineVideoInfo.vue'
-import YouTubeIFrame from '~/components/YouTubeIFrame.vue'
-import interact from 'interactjs'
 import YouTubeWipeWindow from '~/components/YouTubeWipeWindow.vue'
 import YouTubePlayer from '~/components/YouTubePlayer.vue'
 
@@ -132,17 +132,20 @@ export default {
                 return false;
             });
 
-        let colorIdx = [];
-        for(let channel of channelRes.data) {
-            colorIdx.push({id: channel.id, color: channel.color});
+        let channelList = [];
+        /*for(let channel of channelRes.data) {
+            channelList.push({id: channel.id, color: channel.color});
+        }*/
+        if(channelRes.data) {
+            channelList = channelRes.data;
         }
 
         let videos = [];
         if(res && res.data ) {
-            videos = app.$initializeVideos(res.data, colorIdx);
+            videos = app.$initializeVideos(res.data, channelList);
         }
 
-        return {videos:videos, range:loadRange, colorIdx:colorIdx};
+        return {videos:videos, range:loadRange, channelList:channelList};
     },
     head() {
         return {
@@ -172,6 +175,7 @@ export default {
             futureOffset: 24,
             timelineLength: 1.5,
             focusVideo: null,
+            videoInfomationOffset: 0,
             playerTarget: null,
             expandInfomation: 0,
             wipes: [],
@@ -267,7 +271,7 @@ export default {
 
                 this.$initializeVideos(
                     this.videos,
-                    this.colorIdx
+                    this.channelList
                 );
             }
         },
@@ -290,7 +294,7 @@ export default {
 
                 this.$initializeVideos(
                     this.videos,
-                    this.colorIdx
+                    this.channelList
                 );
             }
         },
@@ -375,7 +379,7 @@ export default {
     },
     components: {
         Bar,    Label,  TimelineCursor, TimelineVideoInfo,
-        YouTubeIFrame,  YouTubeWipeWindow,  YouTubePlayer
+        YouTubeWipeWindow,  YouTubePlayer
     },
     mounted() {
         let [tmpelm] = document.getElementsByClassName('timeline');
