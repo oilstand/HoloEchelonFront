@@ -1,16 +1,32 @@
 <template>
-    <div v-on:wheel="handleOnWheel" class="" style="">
+    <div v-on:wheel="handleOnWheel" class="" :style="">
         <div class="close-button" v-on:click="$emit('close')" style="">x</div>
         <div class="video-infomation-unit" style="">
-            <div :style="`width:30%;padding:0 20px;display:flex;align-items:center;`">
-                <YouTubeIFrame :vid="data.id" style="width:100%;" />
+            <div :style="`width:30%;padding:0 20px;display:flex;align-items:center;overflow:hidden;`">
+                <div style="position:relative;width:100%;padding-top:57%;">
+                    <YouTubeIFrame
+                        ref="infoVideo"
+                        :vid="data.id"
+                        v-on:ready="videoMask = false"
+                        v-on:changeStatus="videoChangeStatus"
+                        style="width:100%;position:absolute;left:0;top:0;" />
+                    <img
+                        v-if="videoMask"
+                        :src="data.thumbnails.high.url"
+                        style="width:100%;position:absolute;left:0;top:50%;transform: translate(0, -50%);">
+                </div>
             </div>
             <div style="width:50%;">
                 <h4>{{ title }}</h4>
-                <button v-on:click="$emit('wipe', data)">ワイプ</button>
-                <button v-on:click="$emit('play', data)">プレイヤー</button>
+                <button v-on:click="wipe">ワイプ</button>
+                <button v-on:click="play">プレイヤー</button>
+                <button v-on:click="isDebug = !isDebug">debug</button>
                 <a :href="`https://www.youtube.com/watch?v=${data.id}`" target="_blank">YouTube</a>
-                <div style="width:300px;background-color:white;color:red;">
+                <div style="width:100%;display:flex;padding:16px;">
+                    <img :src="channelThumbnail" style="width:50px;border-radius:25px;">
+                    <h5 style="font-size:16px;line-height:50px;margin-left:16px;">{{ channelTitle }}</h5>
+                </div>
+                <div v-if="isDebug" style="width:300px;background-color:white;color:red;">
                     <p>idx:{{ data.idx }}</p>
                     <p>start:{{ data.actualStartTime }}</p>
                     <p>end:{{ data.actualEndTime }}</p>
@@ -18,9 +34,12 @@
                     <p>channelId:{{ data.channelId }}</p>
                     <p>vid:{{ data.id }}</p>
                 </div>
+                <!--div>
+                    {{ data.description }}
+                </div-->
             </div>
+            <p style="text-align:center;color:white;font-weight:bold;width:100%;padding:16px 0;">↓↓ホイールスクロールで切り抜き情報↓↓</p>
         </div>
-        <p style="text-align:center;color:white;font-weight:bold;width:100%;">↓↓ホイールスクロールで切り抜き情報↓↓</p>
         <ul class="quote-video-list" :style="`height: ${quoteVideoListHeight};`" v-on:wheel="handleOnWheelQuoteVideoList">
             <li
                 v-for="quoteVideo in quoteVideos"
@@ -39,6 +58,7 @@
 <style scoped>
 .video-infomation-unit {
     display:flex;
+    flex-wrap:wrap;
     justify-content:center;
     align-items:center;
     width:100%;
@@ -71,7 +91,11 @@ export default {
     data() {
         return {
             quoteVideoListHeight: 'auto',
-            quoteVideos: []
+            quoteVideos: [],
+            isDebug: false,
+            elmInfoUnit: false,
+            videoMask: true,
+            videoStatus: false
         }
     },
     methods: {
@@ -109,17 +133,56 @@ export default {
             this.quoteVideoListHeightUpdate();
         },
         quoteVideoListHeightUpdate() {
-            let [elmInfoUnit] = document.getElementsByClassName('video-infomation-unit');
-            if(elmInfoUnit) {
-                this.quoteVideoListHeight = `calc(100% - ${elmInfoUnit.clientHeight}px - 32px)`;
+            //let [elmInfoUnit] = document.getElementsByClassName('video-infomation-unit');
+            if(this.initialHeight !== undefined) {
+                this.quoteVideoListHeight = `calc(100% - ${this.initialHeight}px - 32px)`;
             } else {
                 this.quoteVideoListHeight = 'auto';
+            }
+        },
+        videoChangeStatus(status) {
+            console.log(status);
+            this.videoStatus = status;
+        },
+        wipe() {
+            this.$emit('wipe', this.data);
+            if(this.videoStatus == 1) {
+                this.$refs.infoVideo.pause();
+            }
+        },
+        play() {
+            this.$emit('play', this.data);
+            if(this.videoStatus == 1) {
+                this.$refs.infoVideo.pause();
             }
         }
     },
     computed: {
         title() {
             return this.data && this.data.title ? this.data.title : 'none';
+        },
+        initialHeight() {
+            return this.elmInfoUnit && this.elmInfoUnit.clientHeight ? this.elmInfoUnit.clientHeight : 0;
+        },
+        channelThumbnail() {
+            return this.channel && this.channel.thumbnails
+                ? this.channel.thumbnails.medium.url
+                : '/favicon.ico';
+        },
+        channelTitle() {
+            return this.channel && this.channel.title
+                ? this.channel.title
+                : 'not found';
+        },
+        channel() {
+            let channelDat = {id:false,thumbnails:false,title:'error'};
+            for(let channel of this.channelList) {
+                if(channel.id === this.data.channelId) {
+                    channelDat = channel;
+                    break;
+                }
+            }
+            return channelDat;
         }
     },
     watch: {
@@ -127,13 +190,15 @@ export default {
             this.getQuoteVideo(newdata.id);
         }
     },
-    props: ['data'],
+    props: ['data','channelList'],
     components: {
         YouTubeIFrame
     },
     mounted() {
         this.getQuoteVideo(this.data.id);
         this.quoteVideoListHeightUpdate();
+        [this.elmInfoUnit] = document.getElementsByClassName('video-infomation-unit');
+        this.$parent.videoInfomationOffset = this.initialHeight;
     }
 }
 </script>
