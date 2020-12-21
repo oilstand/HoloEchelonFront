@@ -12,7 +12,7 @@
             class="player-video-iframe"
             :vid="videoId"
             autoplay="1" mute="0"
-            :style="`width:${videoWidth};`" />
+            :style="`width:${videoWidth};max-height:calc(100% - 60px);`" />
         <iframe
             class="player-chat-iframe"
             v-if="displayChat"
@@ -63,7 +63,7 @@ export default {
             return 'holoechelon.com';
         },
         videoWidth() {
-            return this.displayChat ? '70%':'100%' 
+            return this.displayChat ? '70%' : '100%';
         },
         chatWidth() {
             return this.displayChat ? '30%':'0' 
