@@ -15,7 +15,7 @@ export default {
       lang: 'ja',
       prefix: 'og: http://ogp.me/ns#'
     },
-    titleTemplate: '%s | HoloEchelon',
+    titleTemplate: '%s | HoloEchelon ホロライブスケジュール',
     title: 'title',
     meta: [
       { charset: 'utf-8' },
@@ -58,7 +58,12 @@ export default {
     // Doc: https://axios.nuxtjs.org/usage
     '@nuxtjs/pwa',
     '@nuxtjs/axios',
+    '@nuxtjs/gtm',
   ],
+  gtm: {
+    id: 'GTM-M9BFJFP',
+    pageTracking: true,
+  },
   /*
   ** Build configuration
   */
