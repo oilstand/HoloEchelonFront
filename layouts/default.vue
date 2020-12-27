@@ -15,12 +15,8 @@
             <div class="right-menu">
                 <label for="right-menu_check" class="right-menu_button">close</label>
                 <ul v-on:click="closeRightMenu">
-                    <li><router-link to="/">menu1</router-link></li>
-                    <li><router-link to="/">menu2</router-link></li>
-                </ul>
-                <ul v-on:click="closeRightMenu">
-                    <li><router-link to="/">menu3</router-link></li>
-                    <li><router-link to="/">menu4</router-link></li>
+                    <li
+                        v-on:click="clickChannelButton"><a>チャンネル一覧</a></li>
                 </ul>
             </div>
         </div>
@@ -236,6 +232,9 @@ export default {
           } else {
               console.log('err checkbox notfound');
           }
+      },
+      clickChannelButton() {
+          this.$nuxt.$emit('headerControlChannel');
       }
   },
   computed: {

@@ -1,9 +1,9 @@
 <template>
-    <div v-on:wheel="handleOnWheel" class="" :style="">
-        <div class="close-button" v-on:click="$emit('close')" style="">x</div>
-        <div class="video-infomation-unit" style="">
-            <div :style="`width:30%;padding:0 20px;display:flex;align-items:center;overflow:hidden;`">
-                <div style="position:relative;width:100%;padding-top:57%;">
+    <div v-on:wheel="handleOnWheel">
+        <div class="close-button" v-on:click="$emit('close')">x</div>
+        <div class="video-infomation-unit">
+            <div class="video_holder">
+                <div>
                     <YouTubeIFrame
                         ref="infoVideo"
                         :vid="data.id"
@@ -11,36 +11,41 @@
                         v-on:changeStatus="videoChangeStatus"
                         style="width:100%;position:absolute;left:0;top:0;" />
                     <img
+                        class="video-thumbnail_dummy"
                         v-if="videoMask"
-                        :src="data.thumbnails.high.url"
-                        style="width:100%;position:absolute;left:0;top:50%;transform: translate(0, -50%);">
+                        :src="data.thumbnails.high.url">
                 </div>
             </div>
-            <div style="width:50%;">
-                <h4>{{ title }}</h4>
-                <button v-on:click="wipe">ワイプ</button>
-                <button v-on:click="play">プレイヤー</button>
-                <button v-on:click="isDebug = !isDebug">debug</button>
-                <a :href="`https://www.youtube.com/watch?v=${data.id}`" target="_blank">YouTube</a>
-                <div style="width:100%;display:flex;padding:16px;">
-                    <img :src="channelThumbnail" style="width:50px;border-radius:25px;">
-                    <h5 style="font-size:16px;line-height:50px;margin-left:16px;">{{ channelTitle }}</h5>
+            <div class="video-info_holder">
+                <div>
+                    <div>
+                        <div>
+                            <h4>{{ title }}</h4>
+                            <button v-on:click="wipe">ワイプ</button>
+                            <button v-on:click="play">プレイヤー</button>
+                            <button v-on:click="$emit('openDescription',data)">詳細</button>
+                            <a :href="`https://www.youtube.com/watch?v=${data.id}`" target="_blank">YouTube</a>
+                            <div
+                                v-on:click="$emit('openChannel', channel.id)"
+                                class="channel-info_holder">
+                                <img class="channel-thumbnail" :src="channelThumbnail">
+                                <h5>{{ channelTitle }}</h5>
+                            </div>
+                            <div
+                                class="video-description_holder"
+                                v-on:wheel.stop="">
+                                <div>{{ data.description }}</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div v-if="isDebug" style="width:300px;background-color:white;color:red;">
-                    <p>idx:{{ data.idx }}</p>
-                    <p>start:{{ data.actualStartTime }}</p>
-                    <p>end:{{ data.actualEndTime }}</p>
-                    <p>scheduled:{{ data.scheduledStartTime }}</p>
-                    <p>channelId:{{ data.channelId }}</p>
-                    <p>vid:{{ data.id }}</p>
-                </div>
-                <!--div>
-                    {{ data.description }}
-                </div-->
             </div>
-            <p style="text-align:center;color:white;font-weight:bold;width:100%;padding:16px 0;">↓↓ホイールスクロールで切り抜き情報↓↓</p>
+            <p class="scroll-message" style="">↓↓ホイールスクロールで切り抜き情報↓↓</p>
         </div>
-        <ul class="quote-video-list" :style="`height: ${quoteVideoListHeight};`" v-on:wheel="handleOnWheelQuoteVideoList">
+        <ul
+            class="quote-video-list"
+            :style="`height: ${quoteVideoListHeight};`"
+            v-on:wheel="handleOnWheelQuoteVideoList">
             <li
                 v-for="quoteVideo in quoteVideos"
                 :key="quoteVideo.id">
@@ -75,6 +80,69 @@
     text-align:center;
     line-height:50px;
 }
+.video_holder {
+    width:30%;
+    padding:0 20px;
+    display:flex;
+    align-items:center;
+    overflow:hidden;
+}
+.video_holder > div {
+    position:relative;
+    width:100%;
+    padding-top:57%;
+}
+.video-info_holder {
+    width:50%;
+}
+.video-info_holder > div {
+    padding-top:34.2%;
+    position:relative;
+}
+.video-info_holder > div > div {
+    position:absolute;
+    height:100%;
+    width:100%;
+    left:0;top:0;
+    display:flex;
+    align-items:center;
+}
+.video-info_holder > div > div > div {
+    width:100%;
+    height:100%;
+}
+.video-thumbnail_dummy {
+    width:100%;
+    position:absolute;
+    left:0;top:50%;
+    transform: translate(0, -50%);
+}
+.channel-info_holder {
+    width:100%;
+    display:flex;
+    padding:12px 8px;
+    cursor:pointer;
+}
+.channel-thumbnail {
+    width:36px;
+    border-radius:18px;
+}
+.channel-info_holder h5 {
+    font-size:16px;
+    line-height:36px;
+    margin-left:16px;
+}
+.video-description_holder {
+    width:100%;
+    height:calc(100% - 4em - 60px);
+    overflow-y:scroll;
+}
+.video-description_holder > div {
+    padding:4px;
+    word-break:break-all;
+    white-space:pre-wrap;
+    font-size:0.8em;
+}
 .quote-video-list {
     width:80%;
     margin:16px auto;
@@ -84,6 +152,13 @@
 .quote-video-list li {
     display:flex;
 }
+.scroll-message {
+    text-align:center;
+    color:white;
+    font-weight:bold;
+    width:100%;
+    padding:16px 0;
+}
 </style>
 <script>
 import YouTubeIFrame from '~/components/YouTubeIFrame.vue'
@@ -92,7 +167,6 @@ export default {
         return {
             quoteVideoListHeight: 'auto',
             quoteVideos: [],
-            isDebug: false,
             elmInfoUnit: false,
             videoMask: true,
             videoStatus: false
@@ -133,7 +207,6 @@ export default {
             this.quoteVideoListHeightUpdate();
         },
         quoteVideoListHeightUpdate() {
-            //let [elmInfoUnit] = document.getElementsByClassName('video-infomation-unit');
             if(this.initialHeight !== undefined) {
                 this.quoteVideoListHeight = `calc(100% - ${this.initialHeight}px - 32px)`;
             } else {

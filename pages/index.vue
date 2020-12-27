@@ -23,6 +23,45 @@
         <div class="side-control-area" style="left:0;background-image: linear-gradient(90deg, #333 0%, transparent 100%);" v-on:click="expandPast">←</div>
         <div class="side-control-area" style="right:0;background-image: linear-gradient(90deg, transparent 0%, #333 100%);" v-on:click="expandFuture">→</div>
 
+        <input type="checkbox" id="left-control_checkbox" style="">
+        <div class="left-control" style="color:white;">
+            <label class="left-control_toggle" for="left-control_checkbox"></label>
+
+            <h3>フィルター</h3>
+            <ul style="padding-left:30px;">
+                <li v-for="country in ['JP','EN','ID']" :key="country">
+                    <input
+                        type="checkbox"
+                        :id="`hl_${country}`"
+                        :value="country"
+                        v-on:change="filterChangeCountry"
+                        checked="checked">
+                    <label class="" :for="`hl_${country}`">{{country}}</label>
+                </li>
+            </ul>
+            <input
+                type="checkbox"
+                id="filtersort"
+                v-on:change="dispFilterSort = !dispFilterSort"
+                >
+            <label class="" for="filtersort">フィルター再整列</label>
+            <ul class="filter-channel-list" style="">
+                <li
+                    v-for="channel in channelList"
+                    :key="channel.id">
+                        <input
+                            type="checkbox"
+                            v-on:change="filterChangeChannel"
+                            :id="`cb_${channel.id}`"
+                            :value="channel.id">
+                        <label
+                            class=""
+                            :for="`cb_${channel.id}`"
+                            >{{ channel.title }}</label>
+                    </li>
+            </ul>
+        </div>
+
         <!-- TL表示配信の詳細情報表示 -->
         <TimelineVideoInfo
             v-if="focusVideo"
@@ -30,6 +69,8 @@
             v-on:wheel="handleOnWheelInfomation"
             v-on:wipe="wipeAdd"
             v-on:play="videoPlay"
+            v-on:openDescription="descAdd"
+            v-on:openChannel="(cId)=>{dispChannelVideosTarget = cId;}"
             :data="focusVideo"
             :channelList="channelList"
             :style="`height:calc(${videoInfomationOffset}px + ${expandInfomation}px)`"
@@ -37,25 +78,124 @@
 
         <!-- メインビデオプレイヤー -->
         <YouTubePlayer
-            style="position:absolute;left:0;top:0;width:100%;height:100%;"
+            class="overlay-window"
             v-if="playerTarget"
             :data="playerTarget"
             v-on:close="playerTarget = null"
             v-on:wipe="wipeAdd"
             />
 
+        <!-- チャンネル一覧 -->
+        <ChannelList
+            class="overlay-window"
+            v-if="dispChannelListView"
+            v-on:close="dispChannelListView = false"
+            v-on:openChannel="(cId)=>{dispChannelVideosTarget = cId;}"
+            :channelList="channelList"
+        />
+
+        <!-- チャンネル動画一覧 -->
+        <ChannelVideosList
+            class="overlay-window"
+            v-if="dispChannelVideosTarget"
+            v-on:wipe="wipeAdd"
+            v-on:close="dispChannelVideosTarget = null"
+            :cId="dispChannelVideosTarget"
+            style="background-color:rgba(0,0,0,.8);"
+            />
+
+        <!-- descriptionポップアップ -->
+        <VideoDescription
+            class="drag-resize"
+            v-for="(desc, index) in descs"
+            v-on:close="descClose"
+            :data="desc"
+            :key="`dw_${desc.id}`"
+            :style="`position:absolute;left:100px;top:${index * 100 + 100}px;`"/>
+
+        <div v-if="false" class="drag-resize" style="position: absolute;left: 0px;top: 0px;width: 400px;padding: 20px;">
+            <a class="twitter-timeline" href="https://twitter.com/minatoaqua?ref_src=twsrc%5Etfw">Tweets by minatoaqua</a>
+        </div>
+
         <!-- ワイプビデオプレイヤー -->
         <YouTubeWipeWindow
             v-for="(wipe, index) in wipes"
             v-on:close="wipeClose"
-            v-on:play="videoPlayById"
-            :key="`w_${wipe}`"
+            v-on:play="videoPlay"
+            :key="`w_${wipe.id}`"
             :wipe="wipe"
-            class="wipe-window"
+            class="wipe-window drag-resize_aspect"
             :style="`top:${200 * index + 20}px;`" />
+
+
+        <div
+            v-if="firstNotice"
+            style="position:absolute;left:50%;top:50%;width:50%;height:50%;transform:translate(-50%,-50%);background-color:rgba(0,0,0,.7);color:white;">
+            <div
+                v-on:click="firstNotice = false"
+                style="width:30px;height:30px;line-height:30px;text-align:center;position:absolute;top:0;right:0;background-color:rgba(255,255,255,.3);color:black;">x</div>
+            <h2>はじめに</h2>
+            <ul style="padding-left:50px;">
+                <li>このサイトは現在PC専用です。</li>
+                <li>ホロライブの配信予定・配信履歴を確認できます。</li>
+                <li>左の&gt;から配信の絞り込みができます。</li>
+                <li>配信を選択すると情報がみれます。</li>
+                <li>マウスホイールで時系列の移動ができます。</li>
+                <li>ワイプボタンやプレイヤーボタンを押すとサイト内で動画を観ることができます</li>
+                <li>右上の「チャンネル一覧」からチャンネル毎の動画一覧を確認できます。</li>
+                <li>これは開発中のものです。</li>
+                <li>この画面は右上の×で閉じられます。</li>
+            </ul>
+        </div>
+
     </div>
 </template>
 <style>
+#left-control_checkbox {
+    position:absolute;
+    left:0;top:0;
+    width:0;
+    height:0;
+    overflow:hidden;
+    opacity:0;
+}
+.left-control {
+    position:absolute;
+    width:240px;
+    height:100%;
+    left:-220px;top:0;
+    background-color:rgba(0,0,0,.5);
+    transition: all .3s;
+}
+#left-control_checkbox:checked~.left-control {
+    left:0px;
+}
+.left-control_toggle {
+    display:block;
+    height:100%;
+    width:20px;
+    background-color:rgba(0,0,0,.3);
+    position:absolute;
+    right:0;
+    top:0;
+    color:white;
+    font-weight:bold;
+    line-height: 50vh;
+    text-align:center;
+}
+#left-control_checkbox~.left-control > .left-control_toggle:before {
+    content: ">";
+}
+#left-control_checkbox:checked~.left-control > .left-control_toggle:before {
+    content: "<";
+}
+.overlay-window {
+    position:absolute;
+    left:0;
+    top:0;
+    width:100%;
+    height:100%;
+}
 .side-control-area {
     position:absolute;
     top:0;
@@ -91,6 +231,25 @@
     height:calc(300px * 36 / 64);
     right:50px;
 }
+.filter-channel-list {
+    font-size: 0.7em;
+    max-height: 50%;
+    overflow-y: scroll;
+    padding: 12px;
+    list-style: none;
+    width: calc(100% - 24px - 20px);
+    overflow-x: hidden;
+}
+.filter-channel-list li {
+    display:flex;
+}
+.filter-channel-list li label {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+    margin-left: 4px;
+    overflow: hidden;
+}
 </style>
 <script>
 import axios from 'axios'
@@ -99,8 +258,11 @@ import Bar from '~/components/TimelineBar.vue'
 import Label from '~/components/TimelineLabel.vue'
 import TimelineCursor from '~/components/TimelineCursor.vue'
 import TimelineVideoInfo from '~/components/TimelineVideoInfo.vue'
+import VideoDescription from '~/components/VideoDescription.vue'
+import ChannelVideosList from '~/components/ChannelVideosList.vue'
 import YouTubeWipeWindow from '~/components/YouTubeWipeWindow.vue'
 import YouTubePlayer from '~/components/YouTubePlayer.vue'
+import ChannelList from '~/components/ChannelList.vue'
 
 export default {
     async asyncData({ params, app }) {
@@ -118,12 +280,29 @@ export default {
             until: app.$formatDate(until, 'yyyy-MM-dd 23:59:59+09:00')
         };
 
-        let res = await app.$api.request("videos?date="+app.$formatDate(until, 'yyyy-MM-dd')+"&range=3")
+        let until2 = new Date(until.getTime());
+        until2.setDate(until2.getDate() - 2);
+        let vraw1 = await app.$api.request("videos?date="+app.$formatDate(until2, 'yyyy-MM-dd'))
             .then(res => { return res.data; })
             .catch((e) => {
                 console.log("catch request error", e);
                 return false;
             });
+
+        let vraw2 = await app.$api.request("videos?date="+app.$formatDate(until, 'yyyy-MM-dd')+"&range=2")
+            .then(res => { return res.data; })
+            .catch((e) => {
+                console.log("catch request error", e);
+                return false;
+            });
+
+        let videolist = [];
+        if(vraw1 && vraw1.data) {
+            videolist.push(...vraw1.data);
+        }
+        if(vraw2 && vraw2.data) {
+            videolist.push(...vraw2.data);
+        }
 
         let channelRes = await app.$api.request("channelList")
             .then(res => { return res.data; })
@@ -133,19 +312,16 @@ export default {
             });
 
         let channelList = [];
-        /*for(let channel of channelRes.data) {
-            channelList.push({id: channel.id, color: channel.color});
-        }*/
         if(channelRes.data) {
             channelList = channelRes.data;
         }
 
         let videos = [];
-        if(res && res.data ) {
-            videos = app.$initializeVideos(res.data, channelList);
+        if( videolist ) {
+            videos = app.$initializeVideos(videolist, channelList);
         }
 
-        return {videos:videos, range:loadRange, channelList:channelList};
+        return {rawVideos:videos, range:loadRange, channelList:channelList};
     },
     head() {
         return {
@@ -154,13 +330,13 @@ export default {
             },
             title: 'Schedule',
             meta: [
-                { hid: 'description', name: 'description', content: `hololive schedule tool` },
-                { hid: 'keywords', name: 'keywords', content: 'hololive' },
-                { hid: 'og:site_name', property: 'og:site_name', content: 'HoloEchelon' },
+                { hid: 'description', name: 'description', content: `ホロライブの配信スケジュールを24h更新中。切り抜き動画や複窓も` },
+                { hid: 'keywords', name: 'keywords', content: 'ホロライブ,配信スケジュール,複窓ツール,VTuber,切り抜き動画' },
+                { hid: 'og:site_name', property: 'og:site_name', content: 'HoloEchelon ホロライブスケジュールツール' },
                 { hid: 'og:type', property: 'og:type', content: 'website' },
-                { hid: 'og:url', property: 'og:url', content: 'https://holoshift.appspot.com' + this.$nuxt.$route.path },
-                { hid: 'og:title', property: 'og:title', content: `schedule | HoloEchelon` },
-                { hid: 'og:description', property: 'og:description', content: 'hololive stream schedule' },
+                { hid: 'og:url', property: 'og:url', content: 'https://holoechelon.com/' + this.$nuxt.$route.path },
+                { hid: 'og:title', property: 'og:title', content: `schedule | HoloEchelon ホロライブスケジュールツール` },
+                { hid: 'og:description', property: 'og:description', content: 'ホロライブの配信スケジュールを24h更新中。切り抜き動画や複窓も' },
                 { hid: 'og:image', property: 'og:image', content: this.thumbnailUrl },
                 { name: 'twitter:card', content: 'summary' }
             ],
@@ -168,8 +344,6 @@ export default {
     },
     data: function(){
         return {
-            //postで送信するためのリクエストデータ初期化
-            videos: [],
             elmTimeline: null,
             pastOffset: 12,
             futureOffset: 24,
@@ -178,44 +352,65 @@ export default {
             videoInfomationOffset: 0,
             playerTarget: null,
             expandInfomation: 0,
+            dispChannelListView: false,
+            dispChannelVideosTarget: null,
             wipes: [],
-            wipeVideoBuffer: []
+            descs: [],
+            dispFilterCountry: ['JP','ID','EN'],
+            dispFilterSort: false,
+            dispFilterSortLast: "",
+            dispFilterChannel: [],
+            firstNotice: true,
+            intervalCounter: 0
         }
     },
     methods: {
         wipeAdd(videoData){
-            if(this.wipes.indexOf(videoData.id) == -1) {
-                this.wipes.push(videoData.id);
-                this.wipeVideoBuffer.push(videoData);
+            for(let wipe of this.wipes) {
+                if(videoData.id === wipe.id) {
+                    return;
+                }
             }
+            this.wipes.push(videoData);
         },
         videoPlay(videoData) {
             this.playerTarget = videoData;
         },
-        async videoPlayById(vId) {
-            let vData = false;
-            for(let video of this.wipeVideoBuffer) {
-                if(video.id == vId) {
-                    vData = video;
+        wipeClose(vData) {
+            let index = -1;
+            for(let [idx, wipe] of this.wipes.entries()) {
+                if(wipe.id === vData.id) {
+                    index = idx;
                     break;
                 }
             }
-            if(vData) {
-                this.wipeClose(vData.id);
-                this.playerTarget = vData;
-            }
-        },
-        wipeClose(vId) {
-            let index = this.wipes.indexOf(vId);
             if(index == -1)return;
             if(index == 0) {
                 this.wipes.shift();
             } else if(index == (this.wipes.length - 1)) {
                 this.wipes.pop();
             } else {
-                this.wipes = this.wipes.filter(id => id != vId)
+                this.wipes.splice(index, 1);
             }
-            this.wipeVideoBuffer = this.wipeVideoBuffer.filter(video => video.id != vId)
+        },
+        descAdd(videoData){
+            for(let desc of this.descs) {
+                if(videoData.id === desc.id) {
+                    return;
+                }
+            }
+            this.descs.push(videoData);
+        },
+        descClose(vData) {
+            let index = -1;
+            for(let [idx, desc] of this.descs.entries()) {
+                if(desc.id === vData.id) {
+                    index = idx;
+                    break;
+                }
+            }
+            if(index == -1)return;
+            this.descs.splice(index, 1);
         },
         handleOnWheel(e) {
             
@@ -246,10 +441,9 @@ export default {
             }
             
             tmpelm.parentNode.scrollLeft += e.deltaY;
-
         },
-        async requestMoreVideos(targetDate) {
-            return await this.$api.request("videos?date="+this.$formatDate(targetDate, 'yyyy-MM-dd'));
+        async requestMoreVideos(targetDate, range = 1) {
+            return await this.$api.request("videos?date="+this.$formatDate(targetDate, 'yyyy-MM-dd')+ (range == 1 ? '' : '&range='+range));
         },
         async loadPastVideos() {
             let dateTimelineHead = new Date(this.startTimeStr);
@@ -267,10 +461,10 @@ export default {
                 });
                 
             if(res && res.data ) {
-                this.videos.unshift(...res.data);
+                this.rawVideos.unshift(...res.data);
 
                 this.$initializeVideos(
-                    this.videos,
+                    this.rawVideos,
                     this.channelList
                 );
             }
@@ -290,10 +484,39 @@ export default {
                 });
                 
             if(res && res.data ) {
-                this.videos.push(...res.data);
+                this.rawVideos.push(...res.data);
 
                 this.$initializeVideos(
-                    this.videos,
+                    this.rawVideos,
+                    this.channelList
+                );
+            }
+        },
+        async loadCurrentVideos() {
+            this.intervalCounter++;
+            if(this.intervalCounter > 10)return;
+
+            let until = new Date();
+            until.setHours(until.getHours() + 12);
+            let timezoneOffset = until.getTimezoneOffset();
+            let jstOffset = 540 - timezoneOffset;
+            until.setMinutes(until.getMinutes() + jstOffset);
+
+            let res = await this.requestMoreVideos(until, 2)
+                .then(res => { return res.data; })
+                .catch((e) => {
+                    console.log("catch request error", e);
+                    return false;
+                });
+                
+            if(res && res.data ) {
+
+                for(let updVideo of res.data) {
+                    this.rawVideos = this.rawVideos.filter(video => video.id != updVideo.id);
+                    this.rawVideos.push(updVideo);
+                }
+                this.$initializeVideos(
+                    this.rawVideos,
                     this.channelList
                 );
             }
@@ -318,9 +541,90 @@ export default {
         },
         expandFuture() {
             this.futureOffset += 12;this.timelineLength += 0.5;
+        },
+        filterChangeCountry(e) {
+            if(this.dispFilterCountry.indexOf(e.target.value) !== -1 && e.target.checked == false) {
+                this.dispFilterCountry = this.dispFilterCountry.filter(country => country != e.target.value);
+            } else if(this.dispFilterCountry.indexOf(e.target.value) === -1 && e.target.checked == true) {
+                this.dispFilterCountry.push(e.target.value);
+            }
+        },
+        filterChangeChannel(e) {
+            if(this.dispFilterChannel.indexOf(e.target.value) !== -1 && e.target.checked == false) {
+                this.dispFilterChannel = this.dispFilterChannel.filter(country => country != e.target.value);
+            } else if(this.dispFilterChannel.indexOf(e.target.value) === -1 && e.target.checked == true) {
+                this.dispFilterChannel.push(e.target.value);
+            }
+        },
+        selectChannel(channel) {
+            this.dispFilterChannel.push(channel.id);
+        },
+        twitterWidgetLoad() {
+            if(!window.twttr) {
+                window.twttr = (function(d, s, id) {
+                    var js, fjs = d.getElementsByTagName(s)[0],
+                        t = window.twttr || {};
+                    if (d.getElementById(id)) return t;
+                    js = d.createElement(s);
+                    js.id = id;
+                    js.src = "https://platform.twitter.com/widgets.js";
+                    fjs.parentNode.insertBefore(js, fjs);
+
+                    t._e = [];
+                    t.ready = function(f) {
+                        t._e.push(f);
+                    };
+
+                    return t;
+                }(document, "script", "twitter-wjs"));
+            } else {
+                twttr.widgets.load();
+            }
+        },
+        openChannelListView() {
+            this.dispChannelListView = true;
         }
     },
     computed: {
+        videos() {
+            let videoList = this.rawVideos.filter(video => {
+                let ch = false;
+                for(let channel of this.channelList) {
+                    if(video.channelId === channel.id) {
+                        ch = channel;
+                        break;
+                    }
+                }
+                if(this.dispFilterChannel.length > 0) {
+                    return (ch && this.dispFilterChannel.indexOf(ch.id) !== -1);
+                }
+
+                return (ch && ch.country && this.dispFilterCountry.indexOf(ch.country) !== -1);
+            });
+
+            let needSort = () => {
+                if(this.dispFilterChannel.length > 0) {
+                    return true;
+                }
+                for(let country of this.dispFilterCountry) {
+                    if(this.dispFilterSortLast.indexOf(country) == -1) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            if(this.dispFilterSort || needSort()) {
+                this.$initializeVideos(
+                    videoList,
+                    this.channelList
+                );
+                this.dispFilterSortLast = this.dispFilterChannel.length == 0
+                                        ? this.dispFilterCountry.join()
+                                        : "";
+            }
+            return videoList;
+        },
         timelineBlockWidth() {
             return (this.timelineLength * 100).toString() + '%';
         },
@@ -379,14 +683,15 @@ export default {
     },
     components: {
         Bar,    Label,  TimelineCursor, TimelineVideoInfo,
-        YouTubeWipeWindow,  YouTubePlayer
+        YouTubeWipeWindow,  YouTubePlayer,  VideoDescription,
+        ChannelVideosList,  ChannelList
     },
     mounted() {
         let [tmpelm] = document.getElementsByClassName('timeline');
         this.elmTimeline = tmpelm.parentNode;
 
         // initialize interactjs
-        interact('.wipe-window')
+        interact('.drag-resize_aspect')
         .resizable({
             edges: {
                 top   : false,
@@ -432,6 +737,47 @@ export default {
             Object.assign(event.target.dataset, { x, y });
         });
 
+        interact('.drag-resize')
+        .resizable({
+            edges: {
+                top   : false,
+                left  : '.resize-lb',
+                bottom: ['.resize-lb','.resize-rb'],
+                right : '.resize-rb'
+            }
+        })
+        .draggable({
+            listeners: {
+                move: (event) => {
+                    let { x, y } = event.target.dataset;
+
+                    x = parseFloat(x) || 0; x += event.dx - 0;
+                    y = parseFloat(y) || 0; y += event.dy - 0;
+                    Object.assign(event.target.dataset, { x, y })
+
+                    event.target.style.transform =
+                        `translate(${x}px, ${y}px)`
+                },
+            }
+        })
+        .on('resizemove', event => {
+            let { x, y } = event.target.dataset;
+
+            x = parseFloat(x) || 0; x += event.deltaRect.left;
+            y = parseFloat(y) || 0; y += event.deltaRect.top;
+
+            Object.assign(event.target.style, {
+                width: `calc(${event.rect.width}px)`,
+                height: `calc(${event.rect.height}px)`,
+                transform: `translate3d(${x}px, ${y}px, 0px)`
+            });
+
+            Object.assign(event.target.dataset, { x, y });
+        });
+
+        this.twitterWidgetLoad();
+        this.$nuxt.$on('headerControlChannel', this.openChannelListView);
+        setInterval(this.loadCurrentVideos, 1000 * 60 * 10);
     }
 }
 </script>
