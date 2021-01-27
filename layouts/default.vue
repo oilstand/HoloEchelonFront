@@ -2,6 +2,7 @@
   <div class="main-body">
     <header id="header">
         <h1>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 113.55 189.23" style="height:48px;fill:#f9f9f9;"><defs><style>.a{fill:#f9f9f9;}</style></defs><polygon class="a" points="29 73.94 58 189.23 0 189.23 29 73.94"/><path class="a" d="M346.91,217.23c-8.21-25-13.73-62-11.71-85.95-13,23.46-12.4,70.48-5.43,91.74s34.56,59.88,59,70.89C372.87,275.92,355.2,242.5,346.91,217.23Z" transform="translate(-303 -117.77)"/><ellipse class="a" cx="378.12" cy="206.96" rx="29" ry="93.5" transform="translate(-348.66 10.32) rotate(-18.15)"/></svg>
             <router-link to="/">
                 <span>HoloEchelon</span>
             </router-link>
@@ -40,6 +41,7 @@ header {
 }
 header h1 {
     height:100%;
+    display:flex;
 }
 header h1 a {
     display:block;
@@ -89,7 +91,7 @@ header h1 span {
         top: calc((100% - 32px)/2);
     }
     header h1 span {
-        padding-left:calc(32px + 8px);
+        padding-left:calc(2px + 8px);
         font-size:24px;
     }
     .right-menu_icon {
@@ -170,7 +172,7 @@ header h1 span {
         top: calc((100% - 45px)/2);
     }
     header h1 span {
-        padding-left:calc(45px + 16px);
+        padding-left:16px;
     }
     .right-menu_icon {
         display:none;
