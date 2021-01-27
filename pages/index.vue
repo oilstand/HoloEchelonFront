@@ -22,6 +22,9 @@
         </div>
         <div class="side-control-area" style="left:0;background-image: linear-gradient(90deg, #333 0%, transparent 100%);" v-on:click="expandPast">←</div>
         <div class="side-control-area" style="right:0;background-image: linear-gradient(90deg, transparent 0%, #333 100%);" v-on:click="expandFuture">→</div>
+        <div
+            v-on:click="loadCurrentVideos(),intervalCounter=0;"
+            style="position:absolute;right:50px;top:50px;width:150px;height:50px;background-color:rgba(0,0,0,.4);color:white;line-height:50px;text-align:center;cursor:pointer;">{{ lastUpdate ? $formatDate(lastUpdate, 'HH:mm:ss') : "----" }} 更新</div>
 
         <input type="checkbox" id="left-control_checkbox" style="">
         <div class="left-control" style="color:white;">
@@ -130,12 +133,12 @@
 
         <div
             v-if="firstNotice"
-            style="position:absolute;left:50%;top:50%;width:50%;height:50%;transform:translate(-50%,-50%);background-color:rgba(0,0,0,.7);color:white;">
+            class="first-notice">
             <div
                 v-on:click="firstNotice = false"
                 style="width:30px;height:30px;line-height:30px;text-align:center;position:absolute;top:0;right:0;background-color:rgba(255,255,255,.3);color:black;">x</div>
             <h2>はじめに</h2>
-            <ul style="padding-left:50px;">
+            <ul style="">
                 <li>このサイトは現在PC専用です。</li>
                 <li>ホロライブの配信予定・配信履歴を確認できます。</li>
                 <li>左の&gt;から配信の絞り込みができます。</li>
@@ -250,6 +253,34 @@
     margin-left: 4px;
     overflow: hidden;
 }
+.first-notice {
+    position:absolute;
+    background-color:rgba(0,0,0,.7);
+    color:white;
+}
+@media screen and (max-width:959px) {
+    .first-notice {
+        left:0%;
+        top:0%;
+        width:100%;
+        height:100%;
+    }
+    .first-notice ul {
+        padding-left:30px;
+    }
+}
+@media screen and (min-width:960px) {
+    .first-notice {
+        left:50%;
+        top:50%;
+        width:50%;
+        height:50%;
+        transform:translate(-50%,-50%);
+    }
+    .first-notice ul {
+        padding-left:50px;
+    }
+}
 </style>
 <script>
 import axios from 'axios'
@@ -265,7 +296,7 @@ import YouTubePlayer from '~/components/YouTubePlayer.vue'
 import ChannelList from '~/components/ChannelList.vue'
 
 export default {
-    async asyncData({ params, app }) {
+/*    async asyncData({ params, app }) {
 
         let until = new Date();
         until.setDate(until.getDate() + 1);
@@ -322,7 +353,7 @@ export default {
         }
 
         return {rawVideos:videos, range:loadRange, channelList:channelList};
-    },
+    },*/
     head() {
         return {
             htmlAttrs: {
@@ -361,7 +392,11 @@ export default {
             dispFilterSortLast: "",
             dispFilterChannel: [],
             firstNotice: true,
-            intervalCounter: 0
+            intervalCounter: 0,
+            lastUpdate: null,
+            rawVideos: [],
+            range: {since:'',until:""},
+            channelList: []
         }
     },
     methods: {
@@ -498,9 +533,6 @@ export default {
 
             let until = new Date();
             until.setHours(until.getHours() + 12);
-            let timezoneOffset = until.getTimezoneOffset();
-            let jstOffset = 540 - timezoneOffset;
-            until.setMinutes(until.getMinutes() + jstOffset);
 
             let res = await this.requestMoreVideos(until, 2)
                 .then(res => { return res.data; })
@@ -510,10 +542,12 @@ export default {
                 });
                 
             if(res && res.data ) {
+                this.lastUpdate = new Date();
 
                 for(let updVideo of res.data) {
                     this.rawVideos = this.rawVideos.filter(video => video.id != updVideo.id);
                     this.rawVideos.push(updVideo);
+                    console.log(updVideo.title,updVideo.id,updVideo);
                 }
                 this.$initializeVideos(
                     this.rawVideos,
@@ -583,6 +617,74 @@ export default {
         },
         openChannelListView() {
             this.dispChannelListView = true;
+        },
+        formatDate(date, format) {
+            format = format.replace(/yyyy/g, date.getUTCFullYear());
+            format = format.replace(/MM/g, ('0' + (date.getUTCMonth() + 1)).slice(-2));
+            format = format.replace(/dd/g, ('0' + date.getUTCDate()).slice(-2));
+            format = format.replace(/HH/g, ('0' + date.getUTCHours()).slice(-2));
+            format = format.replace(/mm/g, ('0' + date.getUTCMinutes()).slice(-2));
+            format = format.replace(/ss/g, ('0' + date.getUTCSeconds()).slice(-2));
+            format = format.replace(/SSS/g, ('00' + date.getUTCMilliseconds()).slice(-3));
+            return format;
+        },
+        async datainitialize() {
+            let until = new Date();
+            until.setDate(until.getDate() + 1);
+
+            until.setHours(until.getHours() + 9);// GMT+900
+
+            let since = new Date(until.getTime());
+            since.setDate(since.getDate() - 3);
+            let loadRange = {
+                since: this.formatDate(since, 'yyyy-MM-dd 23:59:59+09:00'),
+                until: this.formatDate(until, 'yyyy-MM-dd 23:59:59+09:00')
+            };
+
+            let until2 = new Date(until.getTime());
+            until2.setDate(until2.getDate() - 2);
+            let vraw1 = await this.$api.request("videos?date="+this.formatDate(until2, 'yyyy-MM-dd'))
+                .then(res => { return res.data; })
+                .catch((e) => {
+                    console.log("catch request error", e);
+                    return false;
+                });
+
+            let vraw2 = await this.$api.request("videos?date="+this.formatDate(until, 'yyyy-MM-dd')+"&range=2")
+                .then(res => { return res.data; })
+                .catch((e) => {
+                    console.log("catch request error", e);
+                    return false;
+                });
+
+            let videolist = [];
+            if(vraw1 && vraw1.data) {
+                videolist.push(...vraw1.data);
+            }
+            if(vraw2 && vraw2.data) {
+                videolist.push(...vraw2.data);
+            }
+
+            let channelRes = await this.$api.request("channelList")
+                .then(res => { return res.data; })
+                .catch(e=>{
+                    console.log("catch request error", e);
+                    return false;
+                });
+
+            let channelList = [];
+            if(channelRes.data) {
+                channelList = channelRes.data;
+            }
+
+            let videos = [];
+            if( videolist ) {
+                videos = this.$initializeVideos(videolist, channelList);
+            }
+            this.rawVideos = videos;
+            this.range = loadRange;
+            this.channelList = channelList;
+
         }
     },
     computed: {
@@ -690,6 +792,8 @@ export default {
         let [tmpelm] = document.getElementsByClassName('timeline');
         this.elmTimeline = tmpelm.parentNode;
 
+        this.datainitialize();
+
         // initialize interactjs
         interact('.drag-resize_aspect')
         .resizable({
@@ -778,6 +882,7 @@ export default {
         this.twitterWidgetLoad();
         this.$nuxt.$on('headerControlChannel', this.openChannelListView);
         setInterval(this.loadCurrentVideos, 1000 * 60 * 10);
+        this.lastUpdate = new Date();
     }
 }
 </script>
