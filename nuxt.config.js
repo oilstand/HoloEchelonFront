@@ -1,7 +1,7 @@
 
 export default {
-  ssr: true,
-/*  target: 'universal',*/
+  ssr: false/*true*/,
+  target: 'static',
   generate: {
     routes: [
 
@@ -23,8 +23,7 @@ export default {
     ],
     link: [
       { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
-      { rel: 'apple-touch-icon', type: 'image/png', href: '/apple-touch-icon-180x180.png' },
-      { rel: 'icon', type: 'image/png', href: '/icon-192x192.png' }
+      { rel: 'icon', type: 'image/png', href: '/icon.png' }
     ],
     script: [
     ]
