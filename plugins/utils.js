@@ -44,6 +44,9 @@ const getStartEndTime = (video) => {
             break;
     }
 }
+const isSP = () => {
+    return window.innerWidth < 600;
+}
 
 /*const initializeVideos = (srcVideos, colorIdx) => {
 
@@ -204,6 +207,7 @@ class API {
 export default function ({ $axios }, inject) {
   const api = new API($axios);
   inject('api', api);
+  inject('isSP', isSP);
   inject('formatDate', formatDate);
   inject('initializeVideos', initializeVideos);
 //  inject('initializeVideos2', initializeVideos2);

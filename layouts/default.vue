@@ -78,6 +78,16 @@ header h1 span {
     overflow:hidden;
     opacity:0;
 }
+.right-menu_wrapper a {
+    display:block;
+    width:100%;
+    height:100%;
+    text-decoration:none;
+    color:#f9f9f9;
+    font-weight:400;
+    transition: border .2s ease-out;
+    border-bottom:solid 3px transparent;
+}
 @media screen and (max-width:959px) {
     header {
         height:50px;
@@ -120,6 +130,8 @@ header h1 span {
         width:100%;
         padding: 4px 0;
         text-align:center;
+        color:#e0e0e0;
+        font-weight:bold;
     }
     .right-menu_wrapper {
         position:fixed;
@@ -135,18 +147,18 @@ header h1 span {
         transition:height 0s 0s;
     }
     .right-menu_wrapper ul {
-        width:100%;
     }
     .right-menu_wrapper ul li {
-        width:100%;    
     }
     .right-menu_wrapper a {
-        padding: 8px 0;
+        width:initial;
+        padding: 8px 12px;
+        color:#e0e0e0;
     }
     .right-menu {
         position:absolute;
         right:0;top:0;
-        background-color:#F9F9F9;
+        background-color:#2c2c2c;
         height:100%;
         transition:transform .3s;
         transform: translate3d(100%, 0, 0px);
@@ -194,19 +206,8 @@ header h1 span {
     }
 }
 .main-area {
-    min-height: calc(100vh - 64px);
+    min-height: calc(100vh - 66px);
     background-color:#f7f7f7;
-}
-.right-menu_wrapper a {
-    display:block;
-    width:100%;
-    height:100%;
-    text-decoration:none;
-    color:#f9f9f9;
-    font-weight:400;
-    transition: border .2s ease-out;
-    border-bottom:solid 3px transparent;
-
 }
 .right-menu_wrapper a:hover {
     border-bottom:solid 3px lightpink;

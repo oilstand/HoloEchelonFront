@@ -1,8 +1,8 @@
 <template>
-    <div style="position:relative;overflow:hidden;height: calc(100vh - 64px);">
+    <div style="position:relative;overflow:hidden;height: calc(100vh - 66px);">
 
         <!-- タイムライン -->
-        <div class="timeline_wrapper" v-on:wheel="handleOnWheel">
+        <div class="timeline_wrapper" v-on:wheel="handleOnWheel" v-on:scroll="handleOnScroll">
             <div class="timeline" :style="`background-size:${bgsize}px;background-image: linear-gradient(90deg, transparent ${bgsize - 2}px, #333 ${bgsize}px);width: ${timelineBlockWidth};`">
                 <Bar 
                     v-for="(video, index) in videos"
@@ -74,7 +74,7 @@
             v-on:openChannel="(cId)=>{dispChannelVideosTarget = cId;}"
             :data="focusVideo"
             :channelList="channelList"
-            :style="`height:calc(${videoInfomationOffset}px + ${expandInfomation}px)`"
+            :style="`height:${videoInfoHeight}px`"
             class="video-infomation" />
 
         <!-- メインビデオプレイヤー -->
@@ -137,7 +137,6 @@
                 style="width:30px;height:30px;line-height:30px;text-align:center;position:absolute;top:0;right:0;background-color:rgba(255,255,255,.3);color:black;">x</div>
             <h2>はじめに</h2>
             <ul style="">
-                <li>このサイトは現在PC専用です。</li>
                 <li>ホロライブの配信予定・配信履歴を確認できます。</li>
                 <li>左の&gt;から配信の絞り込みができます。</li>
                 <li>配信を選択すると情報がみれます。</li>
@@ -152,6 +151,46 @@
     </div>
 </template>
 <style>
+.left-control {
+    position:absolute;
+    height:100%;
+    left:-220px;top:0;
+    background-color:rgba(0,0,0,.5);
+    transition: all .3s;
+}
+.left-control_toggle {
+    display:block;
+    width:20px;
+    background-color:rgba(0,0,0,.3);
+    position:absolute;
+    top:0;
+    color:white;
+    font-weight:bold;
+    text-align:center;
+}
+@media screen and (max-width:599px) {
+    .video-infomation {
+        overflow:scroll;
+    }
+    .left-control {
+        width:220px;
+    }
+    .left-control_toggle {
+        height:50px;
+        line-height:50px;
+        left:100%;
+    }
+}
+@media screen and (min-width:600px) {
+    .left-control {
+        width:240px;
+    }
+    .left-control_toggle {
+        height:100%;
+        line-height: 50vh;
+        right:0;
+    }
+}
 #left-control_checkbox {
     position:absolute;
     left:0;top:0;
@@ -160,29 +199,8 @@
     overflow:hidden;
     opacity:0;
 }
-.left-control {
-    position:absolute;
-    width:240px;
-    height:100%;
-    left:-220px;top:0;
-    background-color:rgba(0,0,0,.5);
-    transition: all .3s;
-}
 #left-control_checkbox:checked~.left-control {
     left:0px;
-}
-.left-control_toggle {
-    display:block;
-    height:100%;
-    width:20px;
-    background-color:rgba(0,0,0,.3);
-    position:absolute;
-    right:0;
-    top:0;
-    color:white;
-    font-weight:bold;
-    line-height: 50vh;
-    text-align:center;
 }
 #left-control_checkbox~.left-control > .left-control_toggle:before {
     content: ">";
@@ -200,7 +218,6 @@
 .side-control-area {
     position:absolute;
     top:0;
-    width:100px;
     height:100%;
     opacity:.2;
 }
@@ -266,6 +283,9 @@
     .first-notice ul {
         padding-left:30px;
     }
+    .side-control-area {
+        width:0;
+    }
 }
 @media screen and (min-width:960px) {
     .first-notice {
@@ -277,6 +297,9 @@
     }
     .first-notice ul {
         padding-left:50px;
+    }
+    .side-control-area {
+        width:100px;
     }
 }
 </style>
@@ -388,13 +411,11 @@ export default {
             if(index == -1)return;
             this.descs.splice(index, 1);
         },
-        handleOnWheel(e) {
-            
+        handleOnScroll(e) {
             let [tmpelm] = document.getElementsByClassName('timeline');
             let tlWrapper = tmpelm.parentNode;
 
-            if(tlWrapper.scrollLeft == 0
-                && e.deltaY < 0) {
+            if(tlWrapper.scrollLeft <= 0) {
 
                 this.expandPast();
 
@@ -403,9 +424,8 @@ export default {
                 let dateTimelineHead = new Date(this.startTimeStr);
                 if(dateTimelineHead < dateSince) {
                     this.loadPastVideos();
-                }
-            } else if(tlWrapper.scrollLeft == this.timelineWidth * (this.timelineLength - 1)
-                && e.deltaY > 0) {
+                }/**/
+            } else if(tlWrapper.scrollLeft >= this.timelineWidth * (this.timelineLength - 1)) {
 
                 this.expandFuture();
 
@@ -413,9 +433,13 @@ export default {
                 let dateTimelineTail = new Date(this.endTimeStr);
                 if(dateTimelineTail > dateUntil) {
                     this.loadFutureVideos();
-                }
+                }/**/
             }
-            
+        },
+        handleOnWheel(e) {
+            let [tmpelm] = document.getElementsByClassName('timeline');
+            let tlWrapper = tmpelm.parentNode;
+
             tmpelm.parentNode.scrollLeft += e.deltaY;
         },
         async requestMoreVideos(targetDate, range = 1) {
@@ -497,22 +521,23 @@ export default {
             }
         },
         handleOnWheelInfomation(e) {
-            let [tmpelm] = document.getElementsByClassName('video-infomation');
-            let infoWrapper = tmpelm.parentNode;
+            if(!this.$isSP()) {
+                const tlvpHeight = this.timelineViewHeight;
 
-            this.expandInfomation += e.deltaY;
+                this.expandInfomation += e.deltaY;
 
-            if(this.expandInfomation < 0) {
-                this.expandInfomation = 0;
-            } else if(this.expandInfomation > infoWrapper.clientHeight * 0.65) {
-                this.expandInfomation = infoWrapper.clientHeight * 0.65;
+                if(this.expandInfomation < 0) {
+                    this.expandInfomation = 0;
+                } else if(this.expandInfomation > tlvpHeight * 0.65) {
+                    this.expandInfomation = tlvpHeight * 0.65;
+                }
             }
         },
         expandPast() {
             this.pastOffset += 12;this.timelineLength += 0.5;
             let [tmpelm] = document.getElementsByClassName('timeline');
             let tlWrapper = tmpelm.parentNode;
-            tlWrapper.scrollLeft += this.timelineWidth * 0.5 * this.vpScale;
+            tlWrapper.scrollLeft += this.timelineWidth * 0.5;
         },
         expandFuture() {
             this.futureOffset += 12;this.timelineLength += 0.5;
@@ -626,6 +651,9 @@ export default {
             this.range = loadRange;
             this.channelList = channelList;
 
+            let [tmpelm] = document.getElementsByClassName('timeline');
+            tmpelm.parentNode.scrollLeft += (this.timelineWidth * this.timelineLength - this.timelineViewWidth) / 2;
+
         }
     },
     computed: {
@@ -688,10 +716,16 @@ export default {
             return new Date(this.endTimeStr).getTime();
         },
         bgsize() {
-            return 3600000/(this.end - this.start) * this.timelineWidth * this.timelineLength * this.vpScale;
+            return 3600000/(this.end - this.start) * this.timelineWidth * this.timelineLength;
         },
         timelineWidth() {
+            return this.timelineViewWidth * this.vpScale;
+        },
+        timelineViewWidth() {
             return this.elmTimeline ? this.elmTimeline.clientWidth : 0;
+        },
+        timelineViewHeight() {
+            return this.elmTimeline ? this.elmTimeline.clientHeight : 0;
         },
         dateLabels() {
             let dateLabels = [];
@@ -722,6 +756,9 @@ export default {
 
             } while(tmpDate < endDate);
             return hoursLabels;
+        },
+        videoInfoHeight() {
+            return this.$isSP() ? this.timelineViewHeight :this.videoInfomationOffset + this.expandInfomation;
         }
     },
     components: {
@@ -736,7 +773,7 @@ export default {
         this.datainitialize();
 
         this.vpScale = 1;
-        if(window.innerWidth <= 600) {
+        if(this.$isSP()) {
             this.vpScale = 5;
         }
 

@@ -21,6 +21,56 @@
     </div>
 </template>
 <style scoped>
+.channel-videos {
+    position:absolute;
+    left:0;
+    bottom:0;
+    height:calc(100% - 52px);
+    display:flex;
+    flex-wrap:wrap;
+    overflow-y: scroll;
+    color:white;
+}
+.video_holder {
+    display:flex;
+    flex-wrap:wrap;
+    cursor:pointer;
+}
+.video_holder > h4 {
+    width:100%;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+}
+@media screen and (max-width:599px) {
+    .channel-videos {
+        width:100%;
+    }
+    .video_holder {
+        width:calc(50% - 16px);
+        padding:8px;        
+    }
+    .video_holder > h4 {
+        font-size:0.85em;
+    }
+    .video_holder > p {
+        font-size:0.8em;
+    }
+}
+@media screen and (min-width:600px) {
+    .channel-videos {
+        width:84%;
+        padding:0 8%;
+    }
+    .video_holder {
+        width:calc(20% - 32px);
+        padding:16px;        
+    }
+    .video_holder > h4 {
+        font-size:0.9em;
+    }
+}
 .channel-videos-window {
 
 }
@@ -37,35 +87,8 @@
     line-height:50px;
     cursor:pointer;
 }
-.channel-videos {
-    position:absolute;
-    left:0;
-    bottom:0;
-    width:84%;
-    height:calc(100% - 52px);
-    display:flex;
-    flex-wrap:wrap;
-    overflow-y: scroll;
-    color:white;
-    padding:0 8%;
-}
-.video_holder {
-    width:calc(20% - 32px);
-    padding:16px;
-    display:flex;
-    flex-wrap:wrap;
-    cursor:pointer;
-}
 .video_holder:hover {
     background-color: rgba(255,255,255,.3);
-}
-.video_holder > h4 {
-    width:100%;
-    font-size:0.9em;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    overflow: hidden;
 }
 .video-thumbnail {
     width:100%;
