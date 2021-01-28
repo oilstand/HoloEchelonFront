@@ -4,7 +4,6 @@
         <!-- タイムライン -->
         <div class="timeline_wrapper" v-on:wheel="handleOnWheel">
             <div class="timeline" :style="`background-size:${bgsize}px;background-image: linear-gradient(90deg, transparent ${bgsize - 2}px, #333 ${bgsize}px);width: ${timelineBlockWidth};`">
-                <client-only placeholder="Loading...">
                 <Bar 
                     v-for="(video, index) in videos"
                     v-on:click.native="focusVideo = video"
@@ -17,7 +16,6 @@
                 <Label v-for="(label, index) in dateLabels" :key="`d_${index}`" :data="label" :start="start" :end="end" />
                 <Label v-for="(label, index) in hoursLabels" :key="`h_${index}`" :data="label" :start="start" :end="end" style="top:1em;" />
                 <TimelineCursor :data="{time:new Date().getTime()}" :start="start" :end="end" />
-                </client-only>
             </div>
         </div>
         <div class="side-control-area" style="left:0;background-image: linear-gradient(90deg, #333 0%, transparent 100%);" v-on:click="expandPast">←</div>
@@ -296,64 +294,6 @@ import YouTubePlayer from '~/components/YouTubePlayer.vue'
 import ChannelList from '~/components/ChannelList.vue'
 
 export default {
-/*    async asyncData({ params, app }) {
-
-        let until = new Date();
-        until.setDate(until.getDate() + 1);
-        let timezoneOffset = until.getTimezoneOffset();
-        let jstOffset = 540 - timezoneOffset;
-        until.setMinutes(until.getMinutes() + jstOffset);
-
-        let since = new Date(until.getTime());
-        since.setDate(since.getDate() - 3);
-        let loadRange = {
-            since: app.$formatDate(since, 'yyyy-MM-dd 23:59:59+09:00'),
-            until: app.$formatDate(until, 'yyyy-MM-dd 23:59:59+09:00')
-        };
-
-        let until2 = new Date(until.getTime());
-        until2.setDate(until2.getDate() - 2);
-        let vraw1 = await app.$api.request("videos?date="+app.$formatDate(until2, 'yyyy-MM-dd'))
-            .then(res => { return res.data; })
-            .catch((e) => {
-                console.log("catch request error", e);
-                return false;
-            });
-
-        let vraw2 = await app.$api.request("videos?date="+app.$formatDate(until, 'yyyy-MM-dd')+"&range=2")
-            .then(res => { return res.data; })
-            .catch((e) => {
-                console.log("catch request error", e);
-                return false;
-            });
-
-        let videolist = [];
-        if(vraw1 && vraw1.data) {
-            videolist.push(...vraw1.data);
-        }
-        if(vraw2 && vraw2.data) {
-            videolist.push(...vraw2.data);
-        }
-
-        let channelRes = await app.$api.request("channelList")
-            .then(res => { return res.data; })
-            .catch(e=>{
-                console.log("catch request error", e);
-                return false;
-            });
-
-        let channelList = [];
-        if(channelRes.data) {
-            channelList = channelRes.data;
-        }
-
-        let videos = [];
-        if( videolist ) {
-            videos = app.$initializeVideos(videolist, channelList);
-        }
-
-        return {rawVideos:videos, range:loadRange, channelList:channelList};
-    },*/
     head() {
         return {
             htmlAttrs: {
@@ -396,7 +336,8 @@ export default {
             lastUpdate: null,
             rawVideos: [],
             range: {since:'',until:""},
-            channelList: []
+            channelList: [],
+            vpScale: 1
         }
     },
     methods: {
@@ -486,7 +427,7 @@ export default {
 
             let dateNewSince = new Date(dateTimelineHead.getTime());
             dateNewSince.setDate(dateNewSince.getDate() - 1);
-            this.range.since = this.$formatDate(dateNewSince, 'yyyy-MM-dd 23:59:59+09:00');
+            this.range.since = this.$formatDate(dateNewSince, 'yyyy/MM/dd 23:59:59+09:00');
 
             let res = await this.requestMoreVideos(dateTimelineHead)
                 .then(res => { return res.data; })
@@ -509,7 +450,7 @@ export default {
             let dateNewUntil = new Date(dateTimelineTail.getTime());
 
             dateNewUntil.setDate(dateNewUntil.getDate());
-            this.range.until = this.$formatDate(dateNewUntil, 'yyyy-MM-dd 23:59:59+09:00');
+            this.range.until = this.$formatDate(dateNewUntil, 'yyyy/MM/dd 23:59:59+09:00');
 
             let res = await this.requestMoreVideos(dateTimelineTail)
                 .then(res => { return res.data; })
@@ -571,7 +512,7 @@ export default {
             this.pastOffset += 12;this.timelineLength += 0.5;
             let [tmpelm] = document.getElementsByClassName('timeline');
             let tlWrapper = tmpelm.parentNode;
-            tlWrapper.scrollLeft += this.timelineWidth * 0.5;
+            tlWrapper.scrollLeft += this.timelineWidth * 0.5 * this.vpScale;
         },
         expandFuture() {
             this.futureOffset += 12;this.timelineLength += 0.5;
@@ -637,8 +578,8 @@ export default {
             let since = new Date(until.getTime());
             since.setDate(since.getDate() - 3);
             let loadRange = {
-                since: this.formatDate(since, 'yyyy-MM-dd 23:59:59+09:00'),
-                until: this.formatDate(until, 'yyyy-MM-dd 23:59:59+09:00')
+                since: this.formatDate(since, 'yyyy/MM/dd 23:59:59+09:00'),
+                until: this.formatDate(until, 'yyyy/MM/dd 23:59:59+09:00')
             };
 
             let until2 = new Date(until.getTime());
@@ -728,17 +669,17 @@ export default {
             return videoList;
         },
         timelineBlockWidth() {
-            return (this.timelineLength * 100).toString() + '%';
+            return (this.timelineLength * 100 * this.vpScale).toString() + '%';
         },
         startTimeStr() {
             let now = new Date();
             now.setHours(now.getHours() - this.pastOffset);
-            return this.$formatDate(now, 'yyyy-MM-dd HH:00:00+09:00');
+            return this.$formatDate(now, 'yyyy/MM/dd HH:00:00+09:00');
         },
         endTimeStr() {
             let now = new Date();
             now.setHours(now.getHours() + this.futureOffset);
-            return this.$formatDate(now, 'yyyy-MM-dd HH:00:00+09:00');
+            return this.$formatDate(now, 'yyyy/MM/dd HH:00:00+09:00');
         },
         start() {
             return new Date(this.startTimeStr).getTime();
@@ -747,7 +688,7 @@ export default {
             return new Date(this.endTimeStr).getTime();
         },
         bgsize() {
-            return 3600000/(this.end - this.start) * this.timelineWidth * this.timelineLength;
+            return 3600000/(this.end - this.start) * this.timelineWidth * this.timelineLength * this.vpScale;
         },
         timelineWidth() {
             return this.elmTimeline ? this.elmTimeline.clientWidth : 0;
@@ -756,11 +697,11 @@ export default {
             let dateLabels = [];
             let startDate = new Date(this.startTimeStr);
             let endDate = new Date(this.endTimeStr);
-            let tmpDate = new Date( this.$formatDate(startDate, 'yyyy-MM-dd 00:00:00') );
+            let tmpDate = new Date( this.$formatDate(startDate, 'yyyy/MM/dd 00:00:00') );
             do {
                 dateLabels.push({
                     text:this.$formatDate(tmpDate, 'MM/dd'),
-                    time:this.$formatDate(tmpDate, 'yyyy-MM-dd HH:mm:ss')
+                    time:this.$formatDate(tmpDate, 'yyyy/MM/dd HH:mm:ss')
                 });
                 tmpDate.setDate(tmpDate.getDate() + 1);
 
@@ -771,11 +712,11 @@ export default {
             let hoursLabels = [];
             let startDate = new Date(this.startTimeStr);
             let endDate = new Date(this.endTimeStr);
-            let tmpDate = new Date( this.$formatDate(startDate, 'yyyy-MM-dd 00:00:00') );
+            let tmpDate = new Date( this.$formatDate(startDate, 'yyyy/MM/dd 00:00:00') );
             do {
                 hoursLabels.push({
                     text:this.$formatDate(tmpDate, 'HH'),
-                    time:this.$formatDate(tmpDate, 'yyyy-MM-dd HH:mm:ss')
+                    time:this.$formatDate(tmpDate, 'yyyy/MM/dd HH:mm:ss')
                 });
                 tmpDate.setHours(tmpDate.getHours() + 1);
 
@@ -793,6 +734,11 @@ export default {
         this.elmTimeline = tmpelm.parentNode;
 
         this.datainitialize();
+
+        this.vpScale = 1;
+        if(window.innerWidth <= 600) {
+            this.vpScale = 5;
+        }
 
         // initialize interactjs
         interact('.drag-resize_aspect')
