@@ -16,13 +16,38 @@
             <div class="right-menu">
                 <label for="right-menu_check" class="right-menu_button">close</label>
                 <ul v-on:click="closeRightMenu">
-                    <li
-                        v-on:click="clickChannelButton"><a>チャンネル一覧</a></li>
+                    <li><NuxtLink to="/">タイムライン</NuxtLink></li>
+                    <li><NuxtLink to="/channels">チャンネル一覧</NuxtLink></li>
                 </ul>
             </div>
         </div>
     </header>
-    <nuxt class="main-area"/>
+    <div class="main-area" style="position:relative;overflow:hidden;height: calc(100vh - 66px);">
+        <nuxt />
+
+        <!-- TL表示配信の詳細情報表示 -->
+        <TimelineVideoInfo
+            v-if="focusVideo"
+            v-on:close="focusVideo = null;expandInfomation = 0;"
+            v-on:wheel="handleOnWheelInfomation"
+            v-on:wipe="wipeAdd"
+            v-on:play=""
+            v-on:openDescription=""
+            v-on:openChannel="(cId)=>{dispChannelVideosTarget = cId;}"
+            :data="focusVideo"
+            :channelList="channelList"
+            :style="`height:${videoInfoHeight}px`"
+            class="video-infomation" />
+
+        <!-- ワイプビデオプレイヤー -->
+        <YouTubeWipeWindow
+            v-for="(wipe, index) in wipes"
+            :key="`w_${wipe.id}`"
+            v-on:close="wipeClose"
+            :wipe="wipe"
+            class="wipe-window drag-resize_aspect"
+            :style="`top:${200 * index + 20}px;`" />
+    </div>
   </div>
 </template>
 
@@ -34,6 +59,7 @@ body {
     background-color:#F9F9F9;
 }
 .main-body {
+    position:relative;
 }
 header {
     display:flex;
@@ -87,6 +113,22 @@ header h1 span {
     font-weight:400;
     transition: border .2s ease-out;
     border-bottom:solid 3px transparent;
+}
+.video-infomation {
+    transition: height .2s;
+    position:absolute;
+    left:0;
+    bottom:0;
+    width:100%;
+    height:50%;
+    max-height:100%;
+    color:white;
+    background-color:rgba(0,0,0,.7);
+}
+@media screen and (max-width:599px) {
+    .video-infomation {
+        overflow:scroll;
+    }
 }
 @media screen and (max-width:959px) {
     header {
@@ -147,8 +189,10 @@ header h1 span {
         transition:height 0s 0s;
     }
     .right-menu_wrapper ul {
+        width:100%;
     }
     .right-menu_wrapper ul li {
+        width:100%;
     }
     .right-menu_wrapper a {
         width:initial;
@@ -215,38 +259,193 @@ header h1 span {
 </style>
 
 <script>
+import YouTubeWipeWindow from '~/components/YouTubeWipeWindow.vue'
+import TimelineVideoInfo from '~/components/TimelineVideoInfo.vue'
+import interact from 'interactjs'
+
 export default {
-  head() {
-    return {
-        htmlAttrs: {
-            lang: 'ja'
+    head() {
+        return {
+            htmlAttrs: {
+                lang: 'ja'
+            }
         }
+    },
+    data () {
+        return {
+            elmTimeline: null,
+            focusVideo: null,
+            expandInfomation: 0,
+            videoInfomationOffset: 0,
+            wipes: [],
+            channelList: []
+        }
+    },
+    methods: {
+        wipeAdd(videoData) {
+            for(let wipe of this.wipes) {
+                if(videoData.id === wipe.id) {
+                    return;
+                }
+            }
+            this.wipes.push(videoData);
+        },
+        wipeClose(vData) {
+            let index = -1;
+            for(let [idx, wipe] of this.wipes.entries()) {
+                if(wipe.id === vData.id) {
+                    index = idx;
+                    break;
+                }
+            }
+            if(index == -1)return;
+            if(index == 0) {
+                this.wipes.shift();
+            } else if(index == (this.wipes.length - 1)) {
+                this.wipes.pop();
+            } else {
+                this.wipes.splice(index, 1);
+            }
+        },
+        setFocusVideo(video) {
+            this.focusVideo = video;
+        },
+        handleOnWheelInfomation(e) {
+            if(!this.$isSP()) {
+                const tlvpHeight = this.timelineViewHeight;
+
+                this.expandInfomation += e.deltaY;
+
+                if(this.expandInfomation < 0) {
+                    this.expandInfomation = 0;
+                } else if(this.expandInfomation > tlvpHeight * 0.65) {
+                    this.expandInfomation = tlvpHeight * 0.65;
+                }
+            }
+        },
+        closeRightMenu(event) {
+            const elmCheckbox = document.getElementById('right-menu_check');
+            if(elmCheckbox) {
+                elmCheckbox.checked = false;
+            } else {
+                console.log('err checkbox notfound');
+            }
+        }
+    },
+    computed: {
+        timelineViewHeight() {
+            return this.elmTimeline ? this.elmTimeline.clientHeight : 0;
+        },
+        videoInfoHeight() {
+            return this.$isSP() ? this.timelineViewHeight :this.videoInfomationOffset + this.expandInfomation;
+        }
+    },
+    async mounted() {
+        this.$refreshLocalStorage();
+
+        this.$nuxt.$on('wipe', this.wipeAdd);
+        this.$nuxt.$on('focus', this.setFocusVideo);
+
+        let [tmpelm] = document.getElementsByClassName('main-area');
+        this.elmTimeline = tmpelm.parentNode;
+
+        let res;
+        if(res = await this.$api.cRequest("channelList", 60 * 15)) {
+            if(res.data) {
+                this.channelList = res.data;
+            }
+        }
+
+        // initialize interactjs
+        interact('.drag-resize_aspect')
+        .resizable({
+            edges: {
+                top   : false,
+                left  : '.resize-lb',
+                bottom: '.resize-lb',
+                right : false
+            },
+            modifiers: [
+                interact.modifiers.aspectRatio({
+                    ratio: (64/36)
+                })
+            ]
+        })
+        .draggable({
+            listeners: {
+                start (event) {
+                    //@console.log(event.type, event.target);
+                },
+                move: (event) => {
+                    let { x, y } = event.target.dataset;
+
+                    x = parseFloat(x) || 0; x += event.dx - 0;
+                    y = parseFloat(y) || 0; y += event.dy - 0;
+                    Object.assign(event.target.dataset, { x, y })
+
+                    event.target.style.transform =
+                        `translate(${x}px, ${y}px)`
+                },
+            }
+        })
+        .on('resizemove', event => {
+            let { x, y } = event.target.dataset;
+
+            x = parseFloat(x) || 0;// x += event.deltaRect.left;
+            y = parseFloat(y) || 0; y += event.deltaRect.top;
+
+            Object.assign(event.target.style, {
+                width: `calc(${event.rect.width}px)`,
+                height: `calc(${event.rect.height}px)`,
+                transform: `translate3d(${x}px, ${y}px, 0px)`
+            });
+
+            Object.assign(event.target.dataset, { x, y });
+        });
+
+        interact('.drag-resize')
+        .resizable({
+            edges: {
+                top   : false,
+                left  : '.resize-lb',
+                bottom: ['.resize-lb','.resize-rb'],
+                right : '.resize-rb'
+            }
+        })
+        .draggable({
+            listeners: {
+                move: (event) => {
+                    let { x, y } = event.target.dataset;
+
+                    x = parseFloat(x) || 0; x += event.dx - 0;
+                    y = parseFloat(y) || 0; y += event.dy - 0;
+                    Object.assign(event.target.dataset, { x, y })
+
+                    event.target.style.transform =
+                        `translate(${x}px, ${y}px)`
+                },
+            }
+        })
+        .on('resizemove', event => {
+            let { x, y } = event.target.dataset;
+
+            x = parseFloat(x) || 0; x += event.deltaRect.left;
+            y = parseFloat(y) || 0; y += event.deltaRect.top;
+
+            Object.assign(event.target.style, {
+                width: `calc(${event.rect.width}px)`,
+                height: `calc(${event.rect.height}px)`,
+                transform: `translate3d(${x}px, ${y}px, 0px)`
+            });
+
+            Object.assign(event.target.dataset, { x, y });
+        });
+
+    },
+    components: {   YouTubeWipeWindow, TimelineVideoInfo    },
+    head: {
+        script: [
+            { src: 'https://www.youtube.com/iframe_api' }    ]
     }
-  },
-  data () {
-    return {
-    }
-  },
-  methods: {
-      closeRightMenu(event) {
-          const elmCheckbox = document.getElementById('right-menu_check');
-          if(elmCheckbox) {
-              elmCheckbox.checked = false;
-          } else {
-              console.log('err checkbox notfound');
-          }
-      },
-      clickChannelButton() {
-          this.$nuxt.$emit('headerControlChannel');
-      }
-  },
-  computed: {
-  },
-  mounted() {
-  },
-  head: {
-    script: [
-      { src: 'https://www.youtube.com/iframe_api' }    ]
-  }
 }
 </script>

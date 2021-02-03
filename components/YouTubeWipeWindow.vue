@@ -5,10 +5,11 @@
 
         <div class="close-button"
             v-on:click="$emit('close', wipe)">x</div>
-        <div class="play-button"
-            v-on:click="$emit('play', wipe)">▶</div>
         <div class="info-button"
-            v-on:click="dispInfo = !dispInfo">i</div>
+            v-on:click="$nuxt.$emit('focus',wipe)">i</div>
+        <a class="play-button"
+            target="_blank"
+            :href="`https://www.youtube.com/watch?v=${wipe.id}`">Y</a>
 
         <YouTubeIFrame :vid="wipe.id" autoplay="1" mute="1" style="width:100%;height:100%;" />
 
@@ -21,13 +22,6 @@
             v-on:mousedown.stop="resize_mode = 1"
             v-on:mouseup.stop="resize_mode = 0"
             :style="`${resize_mode == 1 ? 'width:100%;height:100%;':''}`" />
-
-        <div v-show="dispInfo" class="wipe-infomation">
-            <h4>{{ wipe.title }}</h4>
-            <div>
-                <div>{{ wipe.description }}</div>
-            </div>
-        </div>
     </div>
 </template>
 <style scoped>
@@ -49,10 +43,13 @@
     cursor:pointer;
 }
 .play-button {
-    top:30px;
+    display:block;
+    text-decoration:none;
+    color:#fdfdfd;
+    top:60px;
 }
 .info-button {
-    top:60px;
+    top:30px;
 }
 .move-mask {
     position:absolute;
@@ -104,8 +101,7 @@ export default {
     data() {
         return {
             resize_mode: false,
-            move_mode: false,
-            dispInfo: false
+            move_mode: false
         }
     },
     methods: {

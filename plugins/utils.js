@@ -141,6 +141,102 @@ const initializeVideos = (srcVideos, colorIdx) => {
     }
     return srcVideos;
 }
+/* https://developer.mozilla.org/ja/docs/Web/API/Web_Storage_API/Using_the_Web_Storage_API */
+const storageAvailable = (type) => {
+    var storage;
+    try {
+        storage = window[type];
+        var x = '__storage_test__';
+        storage.setItem(x, x);
+        storage.removeItem(x);
+        return true;
+    }
+    catch(e) {
+        return e instanceof DOMException && (
+            // everything except Firefox
+            e.code === 22 ||
+            // Firefox
+            e.code === 1014 ||
+            // test name field too, because code might not be present
+            // everything except Firefox
+            e.name === 'QuotaExceededError' ||
+            // Firefox
+            e.name === 'NS_ERROR_DOM_QUOTA_REACHED') &&
+            // acknowledge QuotaExceededError only if there's something already stored
+            (storage && storage.length !== 0);
+    }
+}
+const AppIdentity = 'echelon';
+const AppDataVersion = '0.2';
+const setLocalStorage = (key, value, type = 'cache') => {
+    if(storageAvailable('localStorage')) {
+        //window['localStorage'].setItem(key, JSON.stringify(value));
+        console.log('save:'+key);
+        window['localStorage'].setItem(
+            key,
+            JSON.stringify({
+                app:AppIdentity,
+                type:type,
+                value:value,
+                storedAt:(new Date()).getTime(),
+                version:AppDataVersion
+            })
+        );
+        return true;
+    }
+    return false;
+}
+const getLocalStorage = (key, cacheTime = 0, reqRaw = false) => {
+    if(storageAvailable('localStorage')) {
+        let raw = window['localStorage'].getItem(key);
+        if(raw === null)return undefined;
+
+        let lsObj = null;
+        try {
+            lsObj = JSON.parse(raw);
+        } catch (e) {
+            console.log(e);
+        }
+        if( lsObj
+            && lsObj.storedAt
+            && lsObj.value !== undefined
+            && (    cacheTime == 0
+                    || lsObj.storedAt >= ((new Date()).getTime() - cacheTime)
+                )
+            ) {
+            console.log('load:'+key);
+            return reqRaw ? lsObj : lsObj.value;
+        }
+        console.log('remove:'+key);
+        window['localStorage'].removeItem(key);
+        return null;
+    }
+    return false;
+}
+const refreshLocalStorage = () => {
+    if(storageAvailable('localStorage')) {
+        let idx = 0, limit = 100;
+        let timeout = (new Date()).getTime - (1000 * 60 * 60 * 24);
+        while (idx < window['localStorage'].length && limit > 0) {
+            let lsKey = window['localStorage'].key(idx);
+            let lsData = getLocalStorage(lsKey, 0, true);
+            if( lsData
+                && lsData.app == AppIdentity
+                && (
+                    (lsData.type == 'cache' && lsData.storedAt < timeout)
+                    || lsData.version !== AppDataVersion
+                )
+            ) {
+                console.log('flush:'+lsKey);
+                window['localStorage'].removeItem(lsKey);
+            } else {
+                idx++;
+            }
+            limit--;
+        }
+        console.log('refreshLS:'+(100 - limit));
+    }
+}
 /*const genElement = ( tag, classList = [], attr = {}, property = {} ) => {
     let elm = document.createElement( tag );
     for(let clsName of classList ){
@@ -184,25 +280,73 @@ const generateElement = ( paramObj ) => {
 }*/
 
 class API {
-  constructor (axios) {
-    this.axios = axios;
-  }
-  get API_ROOT() {
-      return "https://api2-dot-holoshift.an.r.appspot.com/api/";
-  }
+    constructor (axios) {
+        this.axios = axios;
+    }
+    get API_ROOT() {
+        return "https://api2-dot-holoshift.an.r.appspot.com/api/";
+    }
 
-  async request (apiInterface, params = {}) {
+    async request (apiInterface, params = {}) {
+        return await this.axios.get(
+            this.API_ROOT + apiInterface, {
+                params: params
+            })
+            .catch((e) => {
+                console.log("catch request error");
+                console.log(e);
+                return false;
+            });
+    }
 
-    return await this.axios.get(
-        this.API_ROOT + apiInterface, {
-            params: params
-        })
-        .catch((e) => {
-            console.log("catch request error");
-            console.log(e);
-            return false;
-        });
-  }
+    async cRequest(apiInterface, cSeconds = 0, params = {}) {
+        let storeKey = apiInterface;
+        for(let [key, value] of Object.entries(params)) {
+            storeKey += "${key}:${value}";
+        }
+        let cache = getLocalStorage(storeKey, 1000 * cSeconds);
+        let resultData = false;
+
+        if(!cache) {
+            let response = await this.request(apiInterface, params)
+                .then(res => { return res.data; })
+                .catch(e=>{
+                    console.log("catch request error", e);
+                    return false;
+                });
+
+            if(response) {
+                resultData = response;
+                setLocalStorage(storeKey, resultData);
+            }
+        } else {
+            resultData = cache;
+        }
+        return resultData;
+    }
+
+    /*async getChannels() {
+        let cache = getLocalStorage('channels', 1000 * 60 * 15);
+        let channelList = false;
+
+        if(!cache) {
+            let channelRes = await this.request("channelList")
+                .then(res => { return res.data; })
+                .catch(e=>{
+                    console.log("catch request error", e);
+                    return false;
+                });
+
+            let channelList = [];
+            if(channelRes.data) {
+                channelList = channelRes.data;
+                setLocalStorage('channels',channelList);
+            }
+        } else {
+            channelList = cache;
+        }
+        return channelList;
+    }*/
 }
 export default function ({ $axios }, inject) {
   const api = new API($axios);
@@ -210,6 +354,11 @@ export default function ({ $axios }, inject) {
   inject('isSP', isSP);
   inject('formatDate', formatDate);
   inject('initializeVideos', initializeVideos);
+
+  inject('storageAvailable', storageAvailable);
+  inject('setLocalStorage', setLocalStorage);
+  inject('getLocalStorage', getLocalStorage);
+  inject('refreshLocalStorage', refreshLocalStorage);
 //  inject('initializeVideos2', initializeVideos2);
 
 /*

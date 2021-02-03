@@ -1,12 +1,12 @@
 <template>
-    <div style="position:relative;overflow:hidden;height: calc(100vh - 66px);">
+    <div style="position:relative;overflow:hidden;height: 100%;width:100%;">
 
         <!-- タイムライン -->
         <div class="timeline_wrapper" v-on:wheel="handleOnWheel" v-on:scroll="handleOnScroll">
             <div class="timeline" :style="`background-size:${bgsize}px;background-image: linear-gradient(90deg, transparent ${bgsize - 2}px, #333 ${bgsize}px);width: ${timelineBlockWidth};`">
                 <Bar 
                     v-for="(video, index) in videos"
-                    v-on:click.native="focusVideo = video"
+                    v-on:click.native="$nuxt.$emit('focus',video)"
                     :key="video.id"
                     :data="video"
                     :start="start"
@@ -63,72 +63,6 @@
             </ul>
         </div>
 
-        <!-- TL表示配信の詳細情報表示 -->
-        <TimelineVideoInfo
-            v-if="focusVideo"
-            v-on:close="focusVideo = null;expandInfomation = 0;"
-            v-on:wheel="handleOnWheelInfomation"
-            v-on:wipe="wipeAdd"
-            v-on:play="videoPlay"
-            v-on:openDescription="descAdd"
-            v-on:openChannel="(cId)=>{dispChannelVideosTarget = cId;}"
-            :data="focusVideo"
-            :channelList="channelList"
-            :style="`height:${videoInfoHeight}px`"
-            class="video-infomation" />
-
-        <!-- メインビデオプレイヤー -->
-        <YouTubePlayer
-            class="overlay-window"
-            v-if="playerTarget"
-            :data="playerTarget"
-            v-on:close="playerTarget = null"
-            v-on:wipe="wipeAdd"
-            />
-
-        <!-- チャンネル一覧 -->
-        <ChannelList
-            class="overlay-window"
-            v-if="dispChannelListView"
-            v-on:close="dispChannelListView = false"
-            v-on:openChannel="(cId)=>{dispChannelVideosTarget = cId;}"
-            :channelList="channelList"
-        />
-
-        <!-- チャンネル動画一覧 -->
-        <ChannelVideosList
-            class="overlay-window"
-            v-if="dispChannelVideosTarget"
-            v-on:wipe="wipeAdd"
-            v-on:close="dispChannelVideosTarget = null"
-            :cId="dispChannelVideosTarget"
-            style="background-color:rgba(0,0,0,.8);"
-            />
-
-        <!-- descriptionポップアップ -->
-        <VideoDescription
-            class="drag-resize"
-            v-for="(desc, index) in descs"
-            v-on:close="descClose"
-            :data="desc"
-            :key="`dw_${desc.id}`"
-            :style="`position:absolute;left:100px;top:${index * 100 + 100}px;`"/>
-
-        <div v-if="false" class="drag-resize" style="position: absolute;left: 0px;top: 0px;width: 400px;padding: 20px;">
-            <a class="twitter-timeline" href="https://twitter.com/minatoaqua?ref_src=twsrc%5Etfw">Tweets by minatoaqua</a>
-        </div>
-
-        <!-- ワイプビデオプレイヤー -->
-        <YouTubeWipeWindow
-            v-for="(wipe, index) in wipes"
-            v-on:close="wipeClose"
-            v-on:play="videoPlay"
-            :key="`w_${wipe.id}`"
-            :wipe="wipe"
-            class="wipe-window drag-resize_aspect"
-            :style="`top:${200 * index + 20}px;`" />
-
-
         <div
             v-if="firstNotice"
             class="first-notice">
@@ -146,6 +80,10 @@
                 <li>これは開発中のものです。</li>
                 <li>この画面は右上の×で閉じられます。</li>
             </ul>
+            <p style="padding:16px;">
+            <input type="checkbox" id="option_notify_once" v-on:change="(e)=>{$setLocalStorage('setting_notify_once',e.target.checked)}">
+            <label for="option_notify_once">このお知らせを表示しない</label>
+            </p>
         </div>
 
     </div>
@@ -169,9 +107,6 @@
     text-align:center;
 }
 @media screen and (max-width:599px) {
-    .video-infomation {
-        overflow:scroll;
-    }
     .left-control {
         width:220px;
     }
@@ -221,17 +156,6 @@
     height:100%;
     opacity:.2;
 }
-.video-infomation {
-    transition: height .2s;
-    position:absolute;
-    left:0;
-    bottom:0;
-    width:100%;
-    height:50%;
-    max-height:100%;
-    color:white;
-    background-color:rgba(0,0,0,.7);
-}
 .timeline_wrapper {
     position:relative;
     width:100%;
@@ -272,12 +196,13 @@
     position:absolute;
     background-color:rgba(0,0,0,.7);
     color:white;
+    padding:16px;
 }
 @media screen and (max-width:959px) {
     .first-notice {
         left:0%;
         top:0%;
-        width:100%;
+        width:calc(100% - 32px);
         height:100%;
     }
     .first-notice ul {
@@ -302,10 +227,16 @@
         width:100px;
     }
 }
+.drag-resize_aspect {
+    touch-action:none;
+}
+.yt_link {
+    color:#fdfdfd;
+    font-weight:bold;
+}
 </style>
 <script>
 import axios from 'axios'
-import interact from 'interactjs'
 import Bar from '~/components/TimelineBar.vue'
 import Label from '~/components/TimelineLabel.vue'
 import TimelineCursor from '~/components/TimelineCursor.vue'
@@ -346,7 +277,6 @@ export default {
             videoInfomationOffset: 0,
             playerTarget: null,
             expandInfomation: 0,
-            dispChannelListView: false,
             dispChannelVideosTarget: null,
             wipes: [],
             descs: [],
@@ -365,12 +295,13 @@ export default {
     },
     methods: {
         wipeAdd(videoData){
-            for(let wipe of this.wipes) {
+            this.$nuxt.$emit('wipe', videoData);
+            /*for(let wipe of this.wipes) {
                 if(videoData.id === wipe.id) {
                     return;
                 }
             }
-            this.wipes.push(videoData);
+            this.wipes.push(videoData);*/
         },
         videoPlay(videoData) {
             this.playerTarget = videoData;
@@ -443,7 +374,8 @@ export default {
             tmpelm.parentNode.scrollLeft += e.deltaY;
         },
         async requestMoreVideos(targetDate, range = 1) {
-            return await this.$api.request("videos?date="+this.$formatDate(targetDate, 'yyyy-MM-dd')+ (range == 1 ? '' : '&range='+range));
+            return  await this.$api.cRequest("videos?date="+this.$formatDate(targetDate, 'yyyy-MM-dd')+ (range == 1 ? '' : '&range='+range), 60 * 15);
+            //return await this.$api.request("videos?date="+this.$formatDate(targetDate, 'yyyy-MM-dd')+ (range == 1 ? '' : '&range='+range));
         },
         async loadPastVideos() {
             let dateTimelineHead = new Date(this.startTimeStr);
@@ -453,12 +385,7 @@ export default {
             dateNewSince.setDate(dateNewSince.getDate() - 1);
             this.range.since = this.$formatDate(dateNewSince, 'yyyy/MM/dd 23:59:59+09:00');
 
-            let res = await this.requestMoreVideos(dateTimelineHead)
-                .then(res => { return res.data; })
-                .catch((e) => {
-                    console.log("catch request error", e);
-                    return false;
-                });
+            let res = await this.requestMoreVideos(dateTimelineHead);
                 
             if(res && res.data ) {
                 this.rawVideos.unshift(...res.data);
@@ -476,12 +403,7 @@ export default {
             dateNewUntil.setDate(dateNewUntil.getDate());
             this.range.until = this.$formatDate(dateNewUntil, 'yyyy/MM/dd 23:59:59+09:00');
 
-            let res = await this.requestMoreVideos(dateTimelineTail)
-                .then(res => { return res.data; })
-                .catch((e) => {
-                    console.log("catch request error", e);
-                    return false;
-                });
+            let res = await this.requestMoreVideos(dateTimelineTail);
                 
             if(res && res.data ) {
                 this.rawVideos.push(...res.data);
@@ -499,12 +421,7 @@ export default {
             let until = new Date();
             until.setHours(until.getHours() + 12);
 
-            let res = await this.requestMoreVideos(until, 2)
-                .then(res => { return res.data; })
-                .catch((e) => {
-                    console.log("catch request error", e);
-                    return false;
-                });
+            let res = await this.requestMoreVideos(until, 2);
                 
             if(res && res.data ) {
                 this.lastUpdate = new Date();
@@ -581,9 +498,6 @@ export default {
                 twttr.widgets.load();
             }
         },
-        openChannelListView() {
-            this.dispChannelListView = true;
-        },
         formatDate(date, format) {
             format = format.replace(/yyyy/g, date.getUTCFullYear());
             format = format.replace(/MM/g, ('0' + (date.getUTCMonth() + 1)).slice(-2));
@@ -595,6 +509,8 @@ export default {
             return format;
         },
         async datainitialize() {
+            let res;
+
             let until = new Date();
             until.setDate(until.getDate() + 1);
 
@@ -609,19 +525,15 @@ export default {
 
             let until2 = new Date(until.getTime());
             until2.setDate(until2.getDate() - 2);
-            let vraw1 = await this.$api.request("videos?date="+this.formatDate(until2, 'yyyy-MM-dd'))
-                .then(res => { return res.data; })
-                .catch((e) => {
-                    console.log("catch request error", e);
-                    return false;
-                });
+            let vraw1;
+            if(res = await this.$api.cRequest("videos?date="+this.formatDate(until2, 'yyyy-MM-dd'), 60 * 4)) {
+                vraw1 = res;
+            }
 
-            let vraw2 = await this.$api.request("videos?date="+this.formatDate(until, 'yyyy-MM-dd')+"&range=2")
-                .then(res => { return res.data; })
-                .catch((e) => {
-                    console.log("catch request error", e);
-                    return false;
-                });
+            let vraw2;
+            if(res = await this.$api.cRequest("videos?date="+this.formatDate(until, 'yyyy-MM-dd')+"&range=2", 60 * 4)) {
+                vraw2 = res;
+            }
 
             let videolist = [];
             if(vraw1 && vraw1.data) {
@@ -631,16 +543,11 @@ export default {
                 videolist.push(...vraw2.data);
             }
 
-            let channelRes = await this.$api.request("channelList")
-                .then(res => { return res.data; })
-                .catch(e=>{
-                    console.log("catch request error", e);
-                    return false;
-                });
-
             let channelList = [];
-            if(channelRes.data) {
-                channelList = channelRes.data;
+            if(res = await this.$api.cRequest("channelList", 60 * 15)) {
+                if(res.data) {
+                    channelList = res.data;
+                }
             }
 
             let videos = [];
@@ -777,95 +684,14 @@ export default {
             this.vpScale = 5;
         }
 
-        // initialize interactjs
-        interact('.drag-resize_aspect')
-        .resizable({
-            edges: {
-                top   : false,
-                left  : '.resize-lb',
-                bottom: '.resize-lb',
-                right : false
-            },
-            modifiers: [
-                interact.modifiers.aspectRatio({
-                    ratio: (64/36)
-                })
-            ]
-        })
-        .draggable({
-            listeners: {
-                start (event) {
-                    //@console.log(event.type, event.target);
-                },
-                move: (event) => {
-                    let { x, y } = event.target.dataset;
-
-                    x = parseFloat(x) || 0; x += event.dx - 0;
-                    y = parseFloat(y) || 0; y += event.dy - 0;
-                    Object.assign(event.target.dataset, { x, y })
-
-                    event.target.style.transform =
-                        `translate(${x}px, ${y}px)`
-                },
-            }
-        })
-        .on('resizemove', event => {
-            let { x, y } = event.target.dataset;
-
-            x = parseFloat(x) || 0;// x += event.deltaRect.left;
-            y = parseFloat(y) || 0; y += event.deltaRect.top;
-
-            Object.assign(event.target.style, {
-                width: `calc(${event.rect.width}px)`,
-                height: `calc(${event.rect.height}px)`,
-                transform: `translate3d(${x}px, ${y}px, 0px)`
-            });
-
-            Object.assign(event.target.dataset, { x, y });
-        });
-
-        interact('.drag-resize')
-        .resizable({
-            edges: {
-                top   : false,
-                left  : '.resize-lb',
-                bottom: ['.resize-lb','.resize-rb'],
-                right : '.resize-rb'
-            }
-        })
-        .draggable({
-            listeners: {
-                move: (event) => {
-                    let { x, y } = event.target.dataset;
-
-                    x = parseFloat(x) || 0; x += event.dx - 0;
-                    y = parseFloat(y) || 0; y += event.dy - 0;
-                    Object.assign(event.target.dataset, { x, y })
-
-                    event.target.style.transform =
-                        `translate(${x}px, ${y}px)`
-                },
-            }
-        })
-        .on('resizemove', event => {
-            let { x, y } = event.target.dataset;
-
-            x = parseFloat(x) || 0; x += event.deltaRect.left;
-            y = parseFloat(y) || 0; y += event.deltaRect.top;
-
-            Object.assign(event.target.style, {
-                width: `calc(${event.rect.width}px)`,
-                height: `calc(${event.rect.height}px)`,
-                transform: `translate3d(${x}px, ${y}px, 0px)`
-            });
-
-            Object.assign(event.target.dataset, { x, y });
-        });
-
         this.twitterWidgetLoad();
-        this.$nuxt.$on('headerControlChannel', this.openChannelListView);
         setInterval(this.loadCurrentVideos, 1000 * 60 * 10);
         this.lastUpdate = new Date();
+
+        let conf = this.$getLocalStorage('setting_notify_once');
+        if(conf) {
+            this.firstNotice = !conf;
+        }
     }
 }
 </script>

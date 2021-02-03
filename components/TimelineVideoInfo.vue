@@ -21,15 +21,13 @@
                         <div>
                             <h4>{{ title }}</h4>
                             <button v-on:click="wipe">ワイプ</button>
-                            <button v-on:click="play">プレイヤー</button>
-                            <button v-on:click="$emit('openDescription',data)">詳細</button>
-                            <a :href="`https://www.youtube.com/watch?v=${data.id}`" target="_blank">YouTube</a>
-                            <div
-                                v-on:click="$emit('openChannel', channel.id)"
+                            <a class="yt_link" :href="`https://www.youtube.com/watch?v=${data.id}`" target="_blank">YouTube</a>
+                            <NuxtLink
+                                :to="`/channel/${channel.id}`"
                                 class="channel-info_holder">
                                 <img class="channel-thumbnail" :src="channelThumbnail">
                                 <h5>{{ channelTitle }}</h5>
-                            </div>
+                            </NuxtLink>
                             <div
                                 class="video-description_holder"
                                 v-on:wheel.stop="">
@@ -54,7 +52,6 @@
                 <div>
                     <h5>{{ quoteVideo.title }}</h5>
                     <button v-on:click="$emit('wipe', quoteVideo)">ワイプ</button>
-                    <button v-on:click="$emit('play', quoteVideo)">プレイヤー</button>
                     <a :href="`https://www.youtube.com/watch?v=${quoteVideo.id}`" target="_blank">YouTube</a>
                 </div>
             </li>
@@ -222,6 +219,9 @@
     transform: translate(0, -50%);
 }
 .channel-info_holder {
+    display:block;
+    text-decoration:none;
+    color:white;
     width:100%;
     display:flex;
     padding:12px 8px;
@@ -266,19 +266,20 @@ export default {
             }
         },
         getQuoteVideo(vId) {
-            this.$api.request("quoteVideos/"+vId)
+            this.$api.cRequest("quoteVideos/"+vId, 60 * 15)
                 .then(res => {
-                    console.log(res.data);
-                    if(res.data.result == 'success') {
-                        this.quoteVideos = res.data.data;
+                    if(res.result == 'success') {
+                        this.quoteVideos = res.data;
                     } else {
                         this.quoteVideos = [];
                     }
-                    return res.data;
+                    console.log(`quoteVideo(${vId}):`+res.result);
+                    return res;
                 })
                 .catch(e=>{
 
                 });
+
         },
         handleOnWheel(e) {
             this.$emit('wheel',e);
