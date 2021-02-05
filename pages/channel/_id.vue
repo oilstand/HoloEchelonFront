@@ -2,6 +2,13 @@
     <div
         class="overlay-window channel-videos-window"
         style="background-color:rgba(0,0,0,.8);">
+        <div class="channel-info">
+            <h1>{{ channelTitle }}</h1>
+            <a v-if="channelLink != '#'" :href="channelLink" target="_blank">YouTube Channel</a>
+            <a v-if="twitterLink != '#'" :href="twitterLink" target="_blank">
+                <img src="~/assets/twitter_logo.svg" style="width:24px;height:24px;vertical-align: bottom;">
+            </a>
+        </div>
         <ul class="channel-videos">
             <li
                 class="video_holder"
@@ -16,7 +23,6 @@
                 <p>{{ $formatDate(new Date(video.actualStartTime ? video.actualStartTime : video.scheduledStartTime), 'yyyy-MM-dd HH:mm:ss') }}</p>
             </li>
         </ul>
-        <NuxtLink to="/channels" class="close-button">×</NuxtLink>
     </div>
 </template>
 <style scoped>
@@ -27,31 +33,29 @@
     width:100%;
     height:100%;
 }
+.channel-info {
+    height:80px;
+}
+.channel-info h1 {
+    color:#f3f3f3;
+}
+.channel-info a {
+    color:#f3f3f3;
+    font-weight:bold;
+}
+.channel-info a:hover {
+    color:lightpink;
+}
 @media screen and (max-width:599px) {
 }
 @media screen and (min-width:600px) {
-}
-.close-button {
-    display:block;
-    text-decoration:none;
-    color:black;
-    width:50px;
-    height:50px;
-    position:absolute;
-    right:30px;
-    top:30px;
-    border:solid 1px black;
-    background-color:rgba(255,255,255,.3);
-    text-align:center;
-    line-height:50px;
-    cursor:pointer;
 }
 
 .channel-videos {
     position:absolute;
     left:0;
     bottom:0;
-    height:calc(100% - 52px);
+    height:calc(100% - 80px);
     display:flex;
     flex-wrap:wrap;
     overflow-y: scroll;
@@ -70,6 +74,9 @@
     overflow: hidden;
 }
 @media screen and (max-width:599px) {
+    .channel-info {
+        width:100%;
+    }
     .channel-videos {
         width:100%;
     }
@@ -85,6 +92,10 @@
     }
 }
 @media screen and (min-width:600px) {
+    .channel-info {
+        margin:0 8%;
+        padding:0 16px;
+    }
     .channel-videos {
         width:84%;
         padding:0 8%;
@@ -105,8 +116,8 @@
     width:50px;
     height:50px;
     position:absolute;
-    right:0;
-    top:0;
+    right:50px;
+    top:50px;
     border:solid 1px black;
     background-color:rgba(255,255,255,.5);
     text-align:center;
@@ -133,14 +144,48 @@
 <script>
 
 export default {
+    head() {
+        return {
+            htmlAttrs: {
+                lang: 'ja'
+            },
+            title: 'Channel Videos',
+            meta: [
+                { hid: 'description', name: 'description', content: `ホロライブの配信スケジュールを24h更新中。切り抜き動画・複窓ツール` },
+                { hid: 'keywords', name: 'keywords', content: 'ホロライブ,配信スケジュール,複窓ツール,VTuber,切り抜き動画' },
+                { hid: 'og:site_name', property: 'og:site_name', content: 'HoloEchelon ホロライブスケジュールツール' },
+                { hid: 'og:type', property: 'og:type', content: 'website' },
+                { hid: 'og:url', property: 'og:url', content: 'https://holoechelon.com/' + this.$nuxt.$route.path },
+                { hid: 'og:title', property: 'og:title', content: `schedule | HoloEchelon ホロライブスケジュールツール` },
+                { hid: 'og:description', property: 'og:description', content: 'ホロライブの配信スケジュールを24h更新。切り抜き動画・複窓ツール' },
+                { hid: 'og:image', property: 'og:image', content: this.thumbnailUrl },
+                { name: 'twitter:card', content: 'summary' }
+            ],
+        }
+    },
     data() {
         return {
+            channelList: [],
+            channel: null,
             cVideoList: []
         }
     },
     methods: {
     },
     computed: {
+        channelTitle() {
+            return this.channel === null
+                    ? 'Loading...' 
+                    : this.channel === -1
+                        ? 'Channel Not Found'
+                        : this.channel.title;
+        },
+        channelLink() {
+            return this.channel != null && this.channel != -1 ? 'https://www.youtube.com/channel/'+this.channel.id : '#';
+        },
+        twitterLink() {
+            return this.channel != null && this.channel != -1 && this.channel.twitter ? 'https://twitter.com/'+this.channel.twitter : '#';
+        }
     },
     watch: {
     },
@@ -151,6 +196,20 @@ export default {
             if(res.data) {
                 this.cVideoList = res.data;
             }
+        }
+        if(res = await this.$api.cRequest("channelList", 60 * 15)) {
+            if(res.data) {
+                this.channelList = res.data;
+                for(let channel of this.channelList) {
+                    if(channel.id === this.$route.params.id) {
+                        this.channel = channel;
+                        break;
+                    }
+                }
+            }
+        }
+        if(this.channel === null) {
+            this.channel = -1;
         }
     }
 }
