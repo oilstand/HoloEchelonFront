@@ -19,6 +19,9 @@
                     <li><NuxtLink to="/">タイムライン</NuxtLink></li>
                     <li><NuxtLink to="/channels">チャンネル一覧</NuxtLink></li>
                 </ul>
+                <ul v-on:click="closeRightMenu">
+                    <li><NuxtLink to="/calendar">カレンダー</NuxtLink></li>
+                </ul>
             </div>
         </div>
     </header>
@@ -123,7 +126,7 @@ header h1 span {
     height:50%;
     max-height:100%;
     color:white;
-    background-color:rgba(0,0,0,.7);
+    background-color:rgba(12,12,12,.9);
 }
 @media screen and (max-width:599px) {
     .video-infomation {
