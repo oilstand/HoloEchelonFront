@@ -15,7 +15,7 @@
                     />
                 <Label v-for="(label, index) in dateLabels" :key="`d_${index}`" :data="label" :start="start" :end="end" />
                 <Label v-for="(label, index) in hoursLabels" :key="`h_${index}`" :data="label" :start="start" :end="end" style="top:1em;" />
-                <TimelineCursor :data="{time:new Date().getTime()}" :start="start" :end="end" />
+                <TimelineCursor :data="{time:lastUpdate ? lastUpdate.getTime() : (new Date()).getTime()}" :start="start" :end="end" />
             </div>
         </div>
         <div class="side-control-area" style="left:0;background-image: linear-gradient(90deg, #333 0%, transparent 100%);" v-on:click="expandPast">←</div>
@@ -255,13 +255,13 @@ export default {
             },
             title: 'Schedule',
             meta: [
-                { hid: 'description', name: 'description', content: `ホロライブの配信スケジュールを24h更新中。切り抜き動画や複窓も` },
+                { hid: 'description', name: 'description', content: `ホロライブの配信スケジュールをチェック！切り抜き動画のチェックや複窓再生もできます。` },
                 { hid: 'keywords', name: 'keywords', content: 'ホロライブ,配信スケジュール,複窓ツール,VTuber,切り抜き動画' },
-                { hid: 'og:site_name', property: 'og:site_name', content: 'HoloEchelon ホロライブスケジュールツール' },
+                { hid: 'og:site_name', property: 'og:site_name', content: 'HoloEchelon ホロライブスケジュール' },
                 { hid: 'og:type', property: 'og:type', content: 'website' },
                 { hid: 'og:url', property: 'og:url', content: 'https://holoechelon.com/' + this.$nuxt.$route.path },
-                { hid: 'og:title', property: 'og:title', content: `schedule | HoloEchelon ホロライブスケジュールツール` },
-                { hid: 'og:description', property: 'og:description', content: 'ホロライブの配信スケジュールを24h更新中。切り抜き動画や複窓も' },
+                { hid: 'og:title', property: 'og:title', content: `schedule | HoloEchelon ホロライブスケジュール` },
+                { hid: 'og:description', property: 'og:description', content: 'ホロライブの配信スケジュールをチェック！切り抜き動画のチェックや複窓再生もできます。' },
                 { hid: 'og:image', property: 'og:image', content: this.thumbnailUrl },
                 { name: 'twitter:card', content: 'summary' }
             ],
@@ -418,7 +418,7 @@ export default {
             this.intervalCounter++;
             if(this.intervalCounter > 10)return;
 
-            let until = new Date();
+            let until = new Date(this.currentTime);
             until.setHours(until.getHours() + 12);
 
             let res = await this.requestMoreVideos(until, 2);
@@ -511,7 +511,7 @@ export default {
         async datainitialize() {
             let res;
 
-            let until = new Date();
+            let until = new Date(this.currentTime);
             until.setDate(until.getDate() + 1);
 
             until.setHours(until.getHours() + 9);// GMT+900
@@ -607,12 +607,12 @@ export default {
             return (this.timelineLength * 100 * this.vpScale).toString() + '%';
         },
         startTimeStr() {
-            let now = new Date();
+            let now = new Date(this.currentTime);
             now.setHours(now.getHours() - this.pastOffset);
             return this.$formatDate(now, 'yyyy/MM/dd HH:00:00+09:00');
         },
         endTimeStr() {
-            let now = new Date();
+            let now = new Date(this.currentTime);
             now.setHours(now.getHours() + this.futureOffset);
             return this.$formatDate(now, 'yyyy/MM/dd HH:00:00+09:00');
         },
@@ -666,6 +666,11 @@ export default {
         },
         videoInfoHeight() {
             return this.$isSP() ? this.timelineViewHeight :this.videoInfomationOffset + this.expandInfomation;
+        },
+        currentTime() {
+            return this.$route.query.time
+                ?(new Date(this.$route.query.time - 0)).getTime() 
+                :(new Date()).getTime();/**/
         }
     },
     components: {
@@ -692,6 +697,7 @@ export default {
         if(conf) {
             this.firstNotice = !conf;
         }
+        console.log(this.currentTime);
     }
 }
 </script>
