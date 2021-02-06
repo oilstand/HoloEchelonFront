@@ -62,6 +62,9 @@
                     </li>
             </ul>
         </div>
+        <div v-if="loading" style="position:absolute;width:100%;height:100%;left:0;top:0;background-color:rgba(0,0,0,.3);display: flex;align-items: center;justify-content: center;">
+            <div class="loader">Loading...</div>
+        </div>
 
         <div
             v-if="firstNotice"
@@ -81,7 +84,7 @@
                 <li>この画面は右上の×で閉じられます。</li>
             </ul>
             <p style="padding:16px;">
-            <input type="checkbox" id="option_notify_once" v-on:change="(e)=>{$setLocalStorage('setting_notify_once',e.target.checked)}">
+            <input type="checkbox" id="option_notify_once" v-on:change="(e)=>{$setLocalStorage('setting_notify_once',e.target.checked,'setting')}">
             <label for="option_notify_once">このお知らせを表示しない</label>
             </p>
         </div>
@@ -94,7 +97,7 @@
     height:100%;
     left:-220px;top:0;
     background-color:rgba(0,0,0,.5);
-    transition: all .3s;
+    transition: left .3s;
 }
 .left-control_toggle {
     display:block;
@@ -234,6 +237,68 @@
     color:#fdfdfd;
     font-weight:bold;
 }
+
+/* loader from https://projects.lukehaas.me/css-loaders/ */
+.loader,
+.loader:before,
+.loader:after {
+  background: #ffffff;
+  -webkit-animation: load1 1s infinite ease-in-out;
+  animation: load1 1s infinite ease-in-out;
+  width: 1em;
+  height: 4em;
+}
+.loader {
+  color: #ffffff;
+  text-indent: -9999em;
+  margin: 88px auto;
+  position: relative;
+  font-size: 11px;
+  -webkit-transform: translateZ(0);
+  -ms-transform: translateZ(0);
+  transform: translateZ(0);
+  -webkit-animation-delay: -0.16s;
+  animation-delay: -0.16s;
+}
+.loader:before,
+.loader:after {
+  position: absolute;
+  top: 0;
+  content: '';
+}
+.loader:before {
+  left: -1.5em;
+  -webkit-animation-delay: -0.32s;
+  animation-delay: -0.32s;
+}
+.loader:after {
+  left: 1.5em;
+}
+@-webkit-keyframes load1 {
+  0%,
+  80%,
+  100% {
+    box-shadow: 0 0;
+    height: 4em;
+  }
+  40% {
+    box-shadow: 0 -2em;
+    height: 5em;
+  }
+}
+@keyframes load1 {
+  0%,
+  80%,
+  100% {
+    box-shadow: 0 0;
+    height: 4em;
+  }
+  40% {
+    box-shadow: 0 -2em;
+    height: 5em;
+  }
+}
+
 </style>
 <script>
 import axios from 'axios'
@@ -290,7 +355,8 @@ export default {
             rawVideos: [],
             range: {since:'',until:""},
             channelList: [],
-            vpScale: 1
+            vpScale: 1,
+            loading: false
         }
     },
     methods: {
@@ -374,10 +440,16 @@ export default {
             tmpelm.parentNode.scrollLeft += e.deltaY;
         },
         async requestMoreVideos(targetDate, range = 1) {
-            return  await this.$api.cRequest("videos?date="+this.$formatDate(targetDate, 'yyyy-MM-dd')+ (range == 1 ? '' : '&range='+range), 60 * 15);
+            this.loading = true;
+            return  await this.$api.cRequest("videos?date="+this.$formatDate(targetDate, 'yyyy-MM-dd')+ (range == 1 ? '' : '&range='+range), 60 * 15)
+                    .then((res)=>{
+                        this.loading = false;
+                        return res;
+                    });
             //return await this.$api.request("videos?date="+this.$formatDate(targetDate, 'yyyy-MM-dd')+ (range == 1 ? '' : '&range='+range));
         },
         async loadPastVideos() {
+            if(this.loading)return;
             let dateTimelineHead = new Date(this.startTimeStr);
             dateTimelineHead.setHours(dateTimelineHead.getHours() - 12);
 
@@ -397,6 +469,7 @@ export default {
             }
         },
         async loadFutureVideos() {
+            if(this.loading)return;
             let dateTimelineTail = new Date(this.endTimeStr);
             let dateNewUntil = new Date(dateTimelineTail.getTime());
 
@@ -509,6 +582,7 @@ export default {
             return format;
         },
         async datainitialize() {
+            this.loading = true;
             let res;
 
             let until = new Date(this.currentTime);
@@ -560,7 +634,7 @@ export default {
 
             let [tmpelm] = document.getElementsByClassName('timeline');
             tmpelm.parentNode.scrollLeft += (this.timelineWidth * this.timelineLength - this.timelineViewWidth) / 2;
-
+            this.loading = false;
         }
     },
     computed: {
