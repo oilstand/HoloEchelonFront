@@ -172,16 +172,26 @@ const setLocalStorage = (key, value, type = 'cache') => {
     if(storageAvailable('localStorage')) {
         //window['localStorage'].setItem(key, JSON.stringify(value));
         console.log('save:'+key);
-        window['localStorage'].setItem(
-            key,
-            JSON.stringify({
-                app:AppIdentity,
-                type:type,
-                value:value,
-                storedAt:(new Date()).getTime(),
-                version:AppDataVersion
-            })
-        );
+        try {
+            window['localStorage'].setItem(
+                key,
+                JSON.stringify({
+                    app:AppIdentity,
+                    type:type,
+                    value:value,
+                    storedAt:(new Date()).getTime(),
+                    version:AppDataVersion
+                })
+            );
+        } catch(e) {
+            console.log(e);
+            let time = checkOldestLocalStorageCacheTime();
+            if(time) {
+                let range = (new Date()).getTime() - time;
+                refreshLocalStorage(Math.floor(range / 2));
+            }
+            return false;
+        }
         return true;
     }
     return false;
@@ -213,10 +223,24 @@ const getLocalStorage = (key, cacheTime = 0, reqRaw = false) => {
     }
     return false;
 }
-const refreshLocalStorage = () => {
+const checkOldestLocalStorageCacheTime = () => {
+    if(storageAvailable('localStorage')) {
+        let time = false;
+        for(let i = 0; i < window['localStorage'].length; i++) {
+            let lsKey = window['localStorage'].key(i);
+            let lsData = getLocalStorage(lsKey, 0, true);
+            if(lsData && (time === false || time > lsData.storedAt)) {
+                time = lsData.storedAt;
+            }
+        }
+        return time;
+    }
+    return false;
+}
+const refreshLocalStorage = (cacheTime = (1000 * 60 * 60 * 24)) => {
     if(storageAvailable('localStorage')) {
         let idx = 0, limit = 100;
-        let timeout = (new Date()).getTime - (1000 * 60 * 60 * 24);
+        let timeout = (new Date()).getTime() - cacheTime;
         while (idx < window['localStorage'].length && limit > 0) {
             let lsKey = window['localStorage'].key(idx);
             let lsData = getLocalStorage(lsKey, 0, true);
@@ -358,6 +382,7 @@ export default function ({ $axios }, inject) {
   inject('storageAvailable', storageAvailable);
   inject('setLocalStorage', setLocalStorage);
   inject('getLocalStorage', getLocalStorage);
+  inject('checkOldestLocalStorageCacheTime', checkOldestLocalStorageCacheTime);
   inject('refreshLocalStorage', refreshLocalStorage);
 //  inject('initializeVideos2', initializeVideos2);
 
