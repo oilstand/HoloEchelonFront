@@ -8,6 +8,9 @@
             <a v-if="twitterLink != '#'" :href="twitterLink" target="_blank">
                 <img src="~/assets/twitter_logo.svg" style="width:24px;height:24px;vertical-align: bottom;">
             </a>
+            <NuxtLink :to="`/channel/${channelId}/calendar`">
+                カレンダー
+            </NuxtLink>
         </div>
         <ul class="channel-videos">
             <li
@@ -185,6 +188,9 @@ export default {
         },
         twitterLink() {
             return this.channel != null && this.channel != -1 && this.channel.twitter ? 'https://twitter.com/'+this.channel.twitter : '#';
+        },
+        channelId() {
+            return this.channel ? this.channel.id : 'undefined';
         }
     },
     watch: {
@@ -211,6 +217,7 @@ export default {
         if(this.channel === null) {
             this.channel = -1;
         }
+        console.log(this.channel);
     }
 }
 </script>
