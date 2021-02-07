@@ -12,7 +12,7 @@
                 カレンダー
             </NuxtLink>
         </div>
-        <ul class="channel-videos">
+        <ul class="channel-videos" v-on:scroll="handleOnScroll">
             <li
                 class="video_holder"
                 v-for="video in cVideoList"
@@ -26,6 +26,9 @@
                 <p>{{ $formatDate(new Date(video.actualStartTime ? video.actualStartTime : video.scheduledStartTime), 'yyyy-MM-dd HH:mm:ss') }}</p>
             </li>
         </ul>
+        <div v-if="loading" style="position:absolute;width:100%;height:100%;left:0;top:0;background-color:rgba(0,0,0,.3);display: flex;align-items: center;justify-content: center;">
+            <div class="loader">Loading...</div>
+        </div>
     </div>
 </template>
 <style scoped>
@@ -79,6 +82,9 @@
 @media screen and (max-width:599px) {
     .channel-info {
         width:100%;
+    }
+    .channel-info h1 {
+        font-size:1.2em;
     }
     .channel-videos {
         width:100%;
@@ -152,15 +158,15 @@ export default {
             htmlAttrs: {
                 lang: 'ja'
             },
-            title: 'Channel Videos',
+            title: `${this.pageTitle}`,
             meta: [
-                { hid: 'description', name: 'description', content: `ホロライブの配信スケジュールを24h更新中。切り抜き動画・複窓ツール` },
+                { hid: 'description', name: 'description', content: `ホロライブの配信スケジュールをチェック！切り抜き動画のチェックや複窓再生もできます。` },
                 { hid: 'keywords', name: 'keywords', content: 'ホロライブ,配信スケジュール,複窓ツール,VTuber,切り抜き動画' },
-                { hid: 'og:site_name', property: 'og:site_name', content: 'HoloEchelon ホロライブスケジュールツール' },
+                { hid: 'og:site_name', property: 'og:site_name', content: 'HoloEchelon ホロライブスケジュール' },
                 { hid: 'og:type', property: 'og:type', content: 'website' },
                 { hid: 'og:url', property: 'og:url', content: 'https://holoechelon.com/' + this.$nuxt.$route.path },
-                { hid: 'og:title', property: 'og:title', content: `schedule | HoloEchelon ホロライブスケジュールツール` },
-                { hid: 'og:description', property: 'og:description', content: 'ホロライブの配信スケジュールを24h更新。切り抜き動画・複窓ツール' },
+                { hid: 'og:title', property: 'og:title', content: `${this.pageTitle}| HoloEchelon ホロライブスケジュール` },
+                { hid: 'og:description', property: 'og:description', content: 'ホロライブの配信スケジュールをチェック！切り抜き動画のチェックや複窓再生もできます。' },
                 { hid: 'og:image', property: 'og:image', content: this.thumbnailUrl },
                 { name: 'twitter:card', content: 'summary' }
             ],
@@ -170,10 +176,40 @@ export default {
         return {
             channelList: [],
             channel: null,
-            cVideoList: []
+            cVideoList: [],
+            page: 0,
+            loading: false,
+            stop:false
         }
     },
     methods: {
+        async handleOnScroll() {
+            let [tmpelm] = document.getElementsByClassName('channel-videos');
+            console.log(tmpelm.scrollHeight,tmpelm.scrollTop, tmpelm.clientHeight);
+            //let tlWrapper = tmpelm.parentNode;
+
+            if(tmpelm.scrollHeight == (tmpelm.scrollTop + tmpelm.clientHeight) && this.cVideoList.length % 50 == 0 && !this.stop) {
+                if(this.loading)return;
+
+                this.loading = true;
+
+                this.page++;
+                let res;
+                if(res = await this.$api.cRequest("channelVideos/"+this.$route.params.id+'?page='+this.page, 60 * 15)) {
+                    if(res.data && res.data.length != 0) {
+                        this.cVideoList.push(...res.data);
+                    } else {
+                        this.stop = true;
+                    }
+                } else {
+                    this.stop = true;
+                }
+                this.loading = false;
+
+            } else {
+
+            }
+        }
     },
     computed: {
         channelTitle() {
@@ -182,6 +218,11 @@ export default {
                     : this.channel === -1
                         ? 'Channel Not Found'
                         : this.channel.title;
+        },
+        pageTitle() {
+            return this.channel === null || this.channel === -1
+                    ? 'Channel Videos ' 
+                    : `${this.channel.title} Videos `;
         },
         channelLink() {
             return this.channel != null && this.channel != -1 ? 'https://www.youtube.com/channel/'+this.channel.id : '#';
@@ -197,6 +238,8 @@ export default {
     },
     components: {},
     async mounted() {
+
+        this.loading = true;
         let res;
         if(res = await this.$api.cRequest("channelVideos/"+this.$route.params.id, 60 * 15)) {
             if(res.data) {
@@ -217,7 +260,7 @@ export default {
         if(this.channel === null) {
             this.channel = -1;
         }
-        console.log(this.channel);
+        this.loading = false;
     }
 }
 </script>
