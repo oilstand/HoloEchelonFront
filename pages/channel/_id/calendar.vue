@@ -32,6 +32,9 @@
                 
             </li>
         </ul>
+        <div v-if="loading" style="position:absolute;width:100%;height:100%;left:0;top:0;background-color:rgba(0,0,0,.3);display: flex;align-items: center;justify-content: center;">
+            <div class="loader">Loading...</div>
+        </div>
     </div>
 </template>
 <style scoped>
@@ -73,6 +76,7 @@
     width: calc(100% / 7 - 2px);
     height: calc(100% / 6 - 2px);
     border: solid 1px #cecece;
+    overflow-y: auto;
 }
 .calendar > li.current {
     background-color: rgba(255,0,0,.1);
@@ -143,6 +147,9 @@
     .video-list > li {
         -webkit-line-clamp: 1;
     }
+    .calendar-info h2 {
+        font-size:1.2em;
+    }
 }
 @media screen and (min-width:600px) {
     .channel-list {
@@ -193,15 +200,15 @@ export default {
             htmlAttrs: {
                 lang: 'ja'
             },
-            title: 'Calendar',
+            title: this.pageTitle,
             meta: [
-                { hid: 'description', name: 'description', content: `ホロライブの配信スケジュールを24h更新中。切り抜き動画・複窓ツール` },
+                { hid: 'description', name: 'description', content: `ホロライブの配信スケジュールをチェック！切り抜き動画のチェックや複窓再生もできます。` },
                 { hid: 'keywords', name: 'keywords', content: 'ホロライブ,配信スケジュール,複窓ツール,VTuber,切り抜き動画' },
-                { hid: 'og:site_name', property: 'og:site_name', content: 'HoloEchelon ホロライブスケジュールツール' },
+                { hid: 'og:site_name', property: 'og:site_name', content: 'HoloEchelon ホロライブスケジュール' },
                 { hid: 'og:type', property: 'og:type', content: 'website' },
                 { hid: 'og:url', property: 'og:url', content: 'https://holoechelon.com/' + this.$nuxt.$route.path },
-                { hid: 'og:title', property: 'og:title', content: `schedule | HoloEchelon ホロライブスケジュールツール` },
-                { hid: 'og:description', property: 'og:description', content: 'ホロライブの配信スケジュールを24h更新。切り抜き動画・複窓ツール' },
+                { hid: 'og:title', property: 'og:title', content: `${this.pageTitle}| HoloEchelon ホロライブスケジュール` },
+                { hid: 'og:description', property: 'og:description', content: 'ホロライブの配信スケジュールをチェック！切り抜き動画のチェックや複窓再生もできます。' },
                 { hid: 'og:image', property: 'og:image', content: this.thumbnailUrl },
                 { name: 'twitter:card', content: 'summary' }
             ],
@@ -214,15 +221,35 @@ export default {
             time: 0,
             channelList: [],
             channel: null,
-            cVideoList: []
+            cVideoList: [],
+            oldestLine: false,
+            page: 0,
+            loading: false,
+            stop:false
         }
     },
     methods: {
-        prev() {
+        async prev() {
             let tmp = new Date(Date.UTC(this.year, this.month));
             tmp.setMonth(tmp.getMonth() - 1);
             this.year = tmp.getUTCFullYear();
             this.month = tmp.getUTCMonth();
+
+            if(tmp < this.oldestLine && !this.stop) {
+                this.loading = true;
+                this.page++;
+                let res;
+                if(res = await this.$api.cRequest("channelVideos/"+this.$route.params.id+'?page='+this.page, 60 * 15)) {
+                    if(res.data && res.data.length != 0) {
+                        this.cVideoList.push(...res.data);
+                    } else {
+                        this.stop = true;
+                    }
+                } else {
+                    this.stop = true;
+                }
+                this.loading = false;
+            }
         },
         next() {
             let tmp = new Date(Date.UTC(this.year, this.month));
@@ -232,6 +259,11 @@ export default {
         }
     },
     computed: {
+        pageTitle() {
+            return this.channel === null || this.channel === -1
+                    ? 'Channel Calendar ' 
+                    : `${this.channel.title} 配信カレンダー `;
+        },
         dayNum() {
             return (new Date(this.year, this.month + 1, 0)).getDate();
         },
@@ -254,6 +286,8 @@ export default {
                 });
                 date.setDate(date.getDate() + 1);
             }
+
+            this.oldestLine = false;
             let since = new Date(Date.UTC(this.year, this.month, 1));
             let until = new Date(Date.UTC(this.year, this.month + 1, 1));
             for(let video of this.cVideoList) {
@@ -264,6 +298,11 @@ export default {
                         : video.publishedAt;
                 if(videoDateStr == false || video.liveBroadcastContent === 'suspended')continue;
                 let videoDate = new Date(videoDateStr);
+
+                if(this.oldestLine == false || this.oldestLine > videoDate) {
+                    this.oldestLine = videoDate;
+                }
+
                 videoDate.setHours(videoDate.getHours() + 9);
                 if(since <= videoDate && videoDate < until) {
                     video.displayTime = videoDate.getUTCHours() + ':' + ('0' + videoDate.getUTCMinutes()).slice(-2);
@@ -289,6 +328,7 @@ export default {
         this.month = day.getUTCMonth();
         this.time = day.getTime();
 
+        this.loading = true;
         let res;
         if(res = await this.$api.cRequest("channelVideos/"+this.$route.params.id, 60 * 15)) {
             if(res.data) {
@@ -309,6 +349,7 @@ export default {
         if(this.channel === null) {
             this.channel = -1;
         }
+        this.loading = false;
 
     }
 }
