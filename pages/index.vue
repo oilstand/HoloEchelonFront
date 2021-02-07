@@ -414,23 +414,25 @@ export default {
 
             if(tlWrapper.scrollLeft <= 0) {
 
-                this.expandPast();
+                if(this.expandPast()) {
+                    let dateSince = new Date(this.range.since);
+                    dateSince.setHours(dateSince.getHours() + 12);
+                    let dateTimelineHead = new Date(this.startTimeStr);
+                    if(dateTimelineHead < dateSince) {
+                        this.loadPastVideos();
+                    }
+                }
 
-                let dateSince = new Date(this.range.since);
-                dateSince.setHours(dateSince.getHours() + 12);
-                let dateTimelineHead = new Date(this.startTimeStr);
-                if(dateTimelineHead < dateSince) {
-                    this.loadPastVideos();
-                }/**/
             } else if(tlWrapper.scrollLeft >= this.timelineWidth * (this.timelineLength - 1)) {
 
-                this.expandFuture();
+                if(this.expandFuture()) {
+                    let dateUntil = new Date(this.range.until);
+                    let dateTimelineTail = new Date(this.endTimeStr);
+                    if(dateTimelineTail > dateUntil) {
+                        this.loadFutureVideos();
+                    }/**/
+                }
 
-                let dateUntil = new Date(this.range.until);
-                let dateTimelineTail = new Date(this.endTimeStr);
-                if(dateTimelineTail > dateUntil) {
-                    this.loadFutureVideos();
-                }/**/
             }
         },
         handleOnWheel(e) {
@@ -524,13 +526,17 @@ export default {
             }
         },
         expandPast() {
+            if(this.loading)return false;
             this.pastOffset += 12;this.timelineLength += 0.5;
             let [tmpelm] = document.getElementsByClassName('timeline');
             let tlWrapper = tmpelm.parentNode;
             tlWrapper.scrollLeft += this.timelineWidth * 0.5;
+            return true;
         },
         expandFuture() {
+            if(this.loading)return false;
             this.futureOffset += 12;this.timelineLength += 0.5;
+            return true;
         },
         filterChangeCountry(e) {
             if(this.dispFilterCountry.indexOf(e.target.value) !== -1 && e.target.checked == false) {
