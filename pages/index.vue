@@ -11,7 +11,8 @@
                     :data="video"
                     :start="start"
                     :end="end"
-                    :style="`top:${video.topOffset + 50}px`"
+                    :titleLine="barOffset == 46 ? 2 : 1"
+                    :style="`top:${video.topOffset + 50}px;height:${barOffset == 46 ? 42 : 26}px;`"
                     />
                 <Label v-for="(label, index) in dateLabels" :key="`d_${index}`" :data="label" :start="start" :end="end" />
                 <Label v-for="(label, index) in hoursLabels" :key="`h_${index}`" :data="label" :start="start" :end="end" style="top:1em;" />
@@ -23,6 +24,9 @@
         <div
             v-on:click="loadCurrentVideos(),intervalCounter=0;"
             style="position:absolute;right:50px;top:50px;width:150px;height:50px;background-color:rgba(0,0,0,.4);color:white;line-height:50px;text-align:center;cursor:pointer;">{{ lastUpdate ? $formatDate(lastUpdate, 'HH:mm:ss') : "----" }} 更新</div>
+        <div
+            v-on:click="changeSize"
+            style="position:absolute;right:50px;top:0px;width:150px;height:50px;background-color:rgba(0,0,0,.4);color:white;line-height:50px;text-align:center;cursor:pointer;">Change Size</div>
 
         <input type="checkbox" id="left-control_checkbox" style="">
         <div class="left-control" style="color:white;">
@@ -356,10 +360,20 @@ export default {
             range: {since:'',until:""},
             channelList: [],
             vpScale: 1,
-            loading: false
+            loading: false,
+            barOffset: 46
         }
     },
     methods: {
+        changeSize() {
+            this.barOffset = this.barOffset == 46 ? 30 : 46;
+
+            this.$initializeVideos(
+                this.rawVideos,
+                this.channelList,
+                this.barOffset
+            );
+        },
         wipeAdd(videoData){
             this.$nuxt.$emit('wipe', videoData);
             /*for(let wipe of this.wipes) {
@@ -466,7 +480,8 @@ export default {
 
                 this.$initializeVideos(
                     this.rawVideos,
-                    this.channelList
+                    this.channelList,
+                    this.barOffset
                 );
             }
         },
@@ -485,7 +500,8 @@ export default {
 
                 this.$initializeVideos(
                     this.rawVideos,
-                    this.channelList
+                    this.channelList,
+                    this.barOffset
                 );
             }
         },
@@ -508,7 +524,8 @@ export default {
                 }
                 this.$initializeVideos(
                     this.rawVideos,
-                    this.channelList
+                    this.channelList,
+                    this.barOffset
                 );
             }
         },
@@ -632,7 +649,7 @@ export default {
 
             let videos = [];
             if( videolist ) {
-                videos = this.$initializeVideos(videolist, channelList);
+                videos = this.$initializeVideos(videolist, channelList, this.barOffset);
             }
             this.rawVideos = videos;
             this.range = loadRange;
@@ -675,7 +692,8 @@ export default {
             if(this.dispFilterSort || needSort()) {
                 this.$initializeVideos(
                     videoList,
-                    this.channelList
+                    this.channelList,
+                    this.barOffset
                 );
                 this.dispFilterSortLast = this.dispFilterChannel.length == 0
                                         ? this.dispFilterCountry.join()

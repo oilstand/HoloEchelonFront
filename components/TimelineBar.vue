@@ -1,6 +1,6 @@
 <template>
     <div class="bar" :idx="data.idx" :style="`background-color:${color};left: calc(${left * 100}% + ${borderOffset}px);width: calc(${width * 100}% + ${borderOffset * 2}px);border:solid ${borderOption};`">
-        <p class="title-disp">{{ title }}</p>
+        <p class="title-disp" :style="`-webkit-line-clamp: ${titleLine};`">{{ title }}</p>
         <p class="channnel-disp">{{ channel }}</p>
         <div v-if="false" :class="`more_info ${edgeClass}`">
             <img :src="data.thumbnails.medium.url">
@@ -20,7 +20,7 @@
     position:absolute;
     border:solid 1px gray;
     width:100px;
-    height:42px;
+    /*height:26px;*/
     cursor: pointer;
 }
 
@@ -28,7 +28,6 @@
     width:100%;
     overflow:hidden;
     font-size:0.6em;
-    -webkit-line-clamp: 2;
     display: -webkit-box;
     -webkit-box-orient: vertical;
     line-height:1.4em;
@@ -149,7 +148,7 @@ export default {
     },
     watch: {
     },
-    props: ['data','start','end'],
+    props: ['data','start','end','titleLine'],
     mounted() {
     }
 }

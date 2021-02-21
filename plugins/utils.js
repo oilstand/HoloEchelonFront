@@ -96,7 +96,7 @@ const isSP = () => {
     }
     return videos;
 }*/
-const initializeVideos = (srcVideos, colorIdx) => {
+const initializeVideos = (srcVideos, colorIdx, offset = 46) => {
 
     if( srcVideos ) {
         let idx = 0;
@@ -126,7 +126,7 @@ const initializeVideos = (srcVideos, colorIdx) => {
             while(nglist.indexOf(video.topIndex) !== -1) {
                 video.topIndex++;
             }
-            video.topOffset = video.topIndex * 46;
+            video.topOffset = video.topIndex * offset;
             if(video.liveBroadcastContent !== 'live') {
                 video.topOffset++;
             }
