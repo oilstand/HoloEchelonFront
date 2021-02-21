@@ -12,17 +12,15 @@ handlers:
     upload: dist/.*\.(txt|html)$
     secure: always
 
-  - url: /(.*\.(gif|png|jpg))$
+  - url: /(.*\.(gif|png|jpg|xml))$
     static_files: dist/\1
-    upload: dist/.*\.(gif|png|jpg)$
+    upload: dist/.*\.(gif|png|jpg|xml)$
     secure: always
-    expiration: "1d"
 
   - url: /(.*\.(ttf|ico))$
     static_files: dist/\1
     upload: dist/.*\.(ttf|ico)$
     secure: always
-    expiration: "4d"
 
   - url: /sw.js
     static_files: dist/sw.js
