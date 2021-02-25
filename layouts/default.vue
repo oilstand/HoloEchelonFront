@@ -20,7 +20,9 @@
                     <li><NuxtLink to="/channels">チャンネル一覧</NuxtLink></li>
                 </ul>
                 <ul v-on:click="closeRightMenu">
+                    <li><a href="https://niji.holoechelon.com/">side: にじさんじ</a></li>
                     <li><NuxtLink to="/calendar">カレンダー</NuxtLink></li>
+                    <li><NuxtLink to="/privacypolicy">プライバシーポリシー</NuxtLink></li>
                 </ul>
             </div>
         </div>
@@ -243,7 +245,7 @@ header h1 span {
         height:50%;
     }
     .right-menu_wrapper ul li {
-        width:150px;    
+        width:180px;    
     }
     .right-menu_label, .right-menu_button {
         display:none;
