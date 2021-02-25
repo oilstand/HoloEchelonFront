@@ -308,7 +308,7 @@ class API {
         this.axios = axios;
     }
     get API_ROOT() {
-        return "https://api.holoechelon.com/api/";
+        return "https://api.holoechelon.com/apin/";
     }
 
     async request (apiInterface, params = {}) {

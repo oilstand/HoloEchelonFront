@@ -15,20 +15,20 @@ export default {
       lang: 'ja',
       prefix: 'og: http://ogp.me/ns#'
     },
-    titleTemplate: '%s | HoloEchelon ホロライブスケジュール',
+    titleTemplate: '%s | NijiEchelon にじさんじスケジュール',
     title: 'title',
     meta: [
         { charset: 'utf-8' },
         { 'http-equiv': 'content-language', content:'ja' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-        { hid: 'description', name: 'description', content: `ホロライブの配信スケジュールを確認できます` },
-        { hid: 'keywords', name: 'keywords', content: 'ホロライブ,配信スケジュール,VTuber' },
-        { hid: 'og:site_name', property: 'og:site_name', content: 'HoloEchelon ホロライブスケジュールサイト' },
+        { hid: 'description', name: 'description', content: `にじさんじの配信スケジュールを確認できます` },
+        { hid: 'keywords', name: 'keywords', content: 'にじさんじ,配信スケジュール,VTuber' },
+        { hid: 'og:site_name', property: 'og:site_name', content: 'NijiEchelon にじさんじスケジュールサイト' },
         { hid: 'og:type', property: 'og:type', content: 'website' },
-        { hid: 'og:url', property: 'og:url', content: 'https://holoechelon.com' },
-        { hid: 'og:title', property: 'og:title', content: `HoloEchelon ホロライブスケジュールサイト` },
-        { hid: 'og:description', property: 'og:description', content: 'ホロライブの配信スケジュールを確認できます' },
-        { hid: 'og:image', property: 'og:image', content: 'https://holoechelon.com/ogp_small.png' },
+        { hid: 'og:url', property: 'og:url', content: 'https://niji.holoechelon.com' },
+        { hid: 'og:title', property: 'og:title', content: `NijiEchelon にじさんじスケジュールサイト` },
+        { hid: 'og:description', property: 'og:description', content: 'にじさんじの配信スケジュールを確認できます' },
+        { hid: 'og:image', property: 'og:image', content: 'https://niji.holoechelon.com/ogp_small.png' },
         { name: 'twitter:card', content: 'summary' }
     ],
     link: [

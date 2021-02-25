@@ -1,5 +1,5 @@
 {
-  "name": "holoechelon",
+  "name": "nijiechelon",
   "scripts": {
     "dev": "nuxt --port 3333",
     "analyze": "nuxt build --analyze",

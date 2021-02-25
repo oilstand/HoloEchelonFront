@@ -4,7 +4,7 @@
         <h1>
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 113.55 189.23" style="height:48px;fill:#f9f9f9;"><defs><style>.a{fill:#f9f9f9;}</style></defs><polygon class="a" points="29 73.94 58 189.23 0 189.23 29 73.94"/><path class="a" d="M346.91,217.23c-8.21-25-13.73-62-11.71-85.95-13,23.46-12.4,70.48-5.43,91.74s34.56,59.88,59,70.89C372.87,275.92,355.2,242.5,346.91,217.23Z" transform="translate(-303 -117.77)"/><ellipse class="a" cx="378.12" cy="206.96" rx="29" ry="93.5" transform="translate(-348.66 10.32) rotate(-18.15)"/></svg>
             <router-link to="/">
-                <span>HoloEchelon</span>
+                <span>NijiEchelon</span>
             </router-link>
         </h1>
         <input type="checkbox" id="right-menu_check">
@@ -20,7 +20,7 @@
                     <li><NuxtLink to="/channels">チャンネル一覧</NuxtLink></li>
                 </ul>
                 <ul v-on:click="closeRightMenu">
-                    <li><a href="https://niji.holoechelon.com/">side: にじさんじ</a></li>
+                    <li><a href="https://holoechelon.com/">side: ホロライブ</a></li>
                     <li><NuxtLink to="/calendar">カレンダー</NuxtLink></li>
                     <li><NuxtLink to="/privacypolicy">プライバシーポリシー</NuxtLink></li>
                 </ul>

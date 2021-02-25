@@ -24,9 +24,6 @@
         <div
             v-on:click="loadCurrentVideos(),intervalCounter=0;"
             style="position:absolute;right:50px;top:50px;width:150px;height:50px;background-color:rgba(0,0,0,.4);color:white;line-height:50px;text-align:center;cursor:pointer;">{{ lastUpdate ? $formatDate(lastUpdate, 'HH:mm:ss') : "----" }} 更新</div>
-        <div
-            v-on:click="changeSize"
-            style="position:absolute;right:50px;top:0px;width:150px;height:50px;background-color:rgba(0,0,0,.4);color:white;line-height:50px;text-align:center;cursor:pointer;">Change Size</div>
 
         <input type="checkbox" id="left-control_checkbox" style="">
         <div class="left-control" style="color:white;">
@@ -78,7 +75,7 @@
                 style="width:30px;height:30px;line-height:30px;text-align:center;position:absolute;top:0;right:0;background-color:rgba(255,255,255,.3);color:black;">x</div>
             <h2>はじめに</h2>
             <ul style="">
-                <li>ホロライブの配信予定・配信履歴を確認できます。</li>
+                <li>にじさんじの配信予定・配信履歴を確認できます。</li>
                 <li>左の&gt;から配信の絞り込みができます。</li>
                 <li>配信を選択すると情報がみれます。</li>
                 <li>マウスホイールで時系列の移動ができます。</li>
@@ -324,13 +321,13 @@ export default {
             },
             title: 'Schedule',
             meta: [
-                { hid: 'description', name: 'description', content: `ホロライブの配信スケジュールをチェック！切り抜き動画のチェックや複窓再生もできます。` },
-                { hid: 'keywords', name: 'keywords', content: 'ホロライブ,配信スケジュール,複窓ツール,VTuber,切り抜き動画' },
-                { hid: 'og:site_name', property: 'og:site_name', content: 'HoloEchelon ホロライブスケジュール' },
+                { hid: 'description', name: 'description', content: `にじさんじの配信スケジュールをチェック！切り抜き動画のチェックや複窓再生もできます。` },
+                { hid: 'keywords', name: 'keywords', content: 'にじさんじ,配信スケジュール,複窓ツール,VTuber,切り抜き動画' },
+                { hid: 'og:site_name', property: 'og:site_name', content: 'NijiEchelon にじさんじスケジュール' },
                 { hid: 'og:type', property: 'og:type', content: 'website' },
-                { hid: 'og:url', property: 'og:url', content: 'https://holoechelon.com/' + this.$nuxt.$route.path },
-                { hid: 'og:title', property: 'og:title', content: `schedule | HoloEchelon ホロライブスケジュール` },
-                { hid: 'og:description', property: 'og:description', content: 'ホロライブの配信スケジュールをチェック！切り抜き動画のチェックや複窓再生もできます。' },
+                { hid: 'og:url', property: 'og:url', content: 'https://niji.holoechelon.com/' + this.$nuxt.$route.path },
+                { hid: 'og:title', property: 'og:title', content: `schedule | NijiEchelon にじさんじスケジュール` },
+                { hid: 'og:description', property: 'og:description', content: 'にじさんじの配信スケジュールをチェック！切り抜き動画のチェックや複窓再生もできます。' },
                 { name: 'twitter:card', content: 'summary' }
             ],
         }
@@ -360,7 +357,7 @@ export default {
             channelList: [],
             vpScale: 1,
             loading: false,
-            barOffset: 46
+            barOffset: 30
         }
     },
     methods: {
@@ -673,7 +670,7 @@ export default {
                     return (ch && this.dispFilterChannel.indexOf(ch.id) !== -1);
                 }
 
-                return (ch && ch.country && this.dispFilterCountry.indexOf(ch.country) !== -1);
+                return true;//(ch && ch.country && this.dispFilterCountry.indexOf(ch.country) !== -1);
             });
 
             let needSort = () => {

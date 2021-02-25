@@ -106,15 +106,15 @@ export default {
             htmlAttrs: {
                 lang: 'ja'
             },
-            title: 'Hololive Channels',
+            title: 'にじさんじチャンネル一覧',
             meta: [
-                { hid: 'description', name: 'description', content: `ホロライブの配信スケジュールをチェック！切り抜き動画のチェックや複窓再生もできます。` },
-                { hid: 'keywords', name: 'keywords', content: 'ホロライブ,配信スケジュール,複窓ツール,VTuber,切り抜き動画' },
-                { hid: 'og:site_name', property: 'og:site_name', content: 'HoloEchelon ホロライブスケジュール' },
+                { hid: 'description', name: 'description', content: `にじさんじの配信スケジュールをチェック！切り抜き動画のチェックや複窓再生もできます。` },
+                { hid: 'keywords', name: 'keywords', content: 'にじさんじ,配信スケジュール,複窓ツール,VTuber,切り抜き動画' },
+                { hid: 'og:site_name', property: 'og:site_name', content: 'NijiEchelon にじさんじスケジュール' },
                 { hid: 'og:type', property: 'og:type', content: 'website' },
-                { hid: 'og:url', property: 'og:url', content: 'https://holoechelon.com/' + this.$nuxt.$route.path },
-                { hid: 'og:title', property: 'og:title', content: `Hololive Channels | HoloEchelon ホロライブスケジュール` },
-                { hid: 'og:description', property: 'og:description', content: 'ホロライブの配信スケジュールをチェック！切り抜き動画のチェックや複窓再生もできます。' },
+                { hid: 'og:url', property: 'og:url', content: 'https://niji.holoechelon.com/' + this.$nuxt.$route.path },
+                { hid: 'og:title', property: 'og:title', content: `にじさんじチャンネル一覧 | NijiEchelon にじさんじスケジュール` },
+                { hid: 'og:description', property: 'og:description', content: 'にじさんじの配信スケジュールをチェック！切り抜き動画のチェックや複窓再生もできます。' },
                 { name: 'twitter:card', content: 'summary' }
             ],
         }
