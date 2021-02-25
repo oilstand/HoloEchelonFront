@@ -167,7 +167,6 @@ export default {
                 { hid: 'og:url', property: 'og:url', content: 'https://holoechelon.com/' + this.$nuxt.$route.path },
                 { hid: 'og:title', property: 'og:title', content: `${this.pageTitle}| HoloEchelon ホロライブスケジュール` },
                 { hid: 'og:description', property: 'og:description', content: 'ホロライブの配信スケジュールをチェック！切り抜き動画のチェックや複窓再生もできます。' },
-                { hid: 'og:image', property: 'og:image', content: this.thumbnailUrl },
                 { name: 'twitter:card', content: 'summary' }
             ],
         }

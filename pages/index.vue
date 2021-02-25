@@ -331,7 +331,6 @@ export default {
                 { hid: 'og:url', property: 'og:url', content: 'https://holoechelon.com/' + this.$nuxt.$route.path },
                 { hid: 'og:title', property: 'og:title', content: `schedule | HoloEchelon ホロライブスケジュール` },
                 { hid: 'og:description', property: 'og:description', content: 'ホロライブの配信スケジュールをチェック！切り抜き動画のチェックや複窓再生もできます。' },
-                { hid: 'og:image', property: 'og:image', content: this.thumbnailUrl },
                 { name: 'twitter:card', content: 'summary' }
             ],
         }
@@ -507,7 +506,7 @@ export default {
         },
         async loadCurrentVideos() {
             this.intervalCounter++;
-            if(this.intervalCounter > 10)return;
+            if(this.intervalCounter > 20)return;
 
             let until = new Date(this.currentTime);
             until.setHours(until.getHours() + 12);
