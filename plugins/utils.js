@@ -308,7 +308,7 @@ class API {
         this.axios = axios;
     }
     get API_ROOT() {
-        return "https://api2-dot-holoshift.an.r.appspot.com/api/";
+        return "https://api.holoechelon.com/api/";
     }
 
     async request (apiInterface, params = {}) {
