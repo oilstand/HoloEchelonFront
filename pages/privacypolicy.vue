@@ -43,7 +43,7 @@ export default {
             htmlAttrs: {
                 lang: 'ja'
             },
-            title: 'Schedule',
+            title: 'プライバシーポリシー',
             meta: [
                 { hid: 'description', name: 'description', content: `ホロライブの配信スケジュールをチェック！切り抜き動画のチェックや複窓再生もできます。` },
                 { hid: 'keywords', name: 'keywords', content: 'ホロライブ,配信スケジュール,複窓ツール,VTuber,切り抜き動画' },
